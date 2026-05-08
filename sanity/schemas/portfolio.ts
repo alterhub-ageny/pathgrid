@@ -1,0 +1,20 @@
+export default {
+  name: 'portfolioItem',
+  title: 'Portfolio Item',
+  type: 'document',
+  fields: [
+    { name: 'title', title: 'Title', type: 'string', validation: (Rule: any) => Rule.required() },
+    { name: 'slug', title: 'Slug', type: 'slug', options: { source: 'title', maxLength: 96 } },
+    { name: 'description', title: 'Description', type: 'text' },
+    { name: 'client', title: 'Client', type: 'string' },
+    { name: 'industry', title: 'Industry', type: 'string' },
+    { name: 'technologies', title: 'Technologies', type: 'string' },
+    { name: 'result', title: 'Result', type: 'string' },
+    { name: 'image', title: 'Image', type: 'image' },
+    { name: 'images', title: 'Gallery', type: 'array', of: [{ type: 'image' }] },
+    { name: 'category', title: 'Category', type: 'string' },
+    { name: 'featured', title: 'Featured', type: 'boolean' },
+    { name: 'order', title: 'Order', type: 'number' },
+    { name: 'published', title: 'Published', type: 'boolean' },
+  ],
+};
