@@ -1,40 +1,6 @@
-@import "tailwindcss";
-
-@theme {
-  --color-navy-50: #f0f3f9;
-  --color-navy-100: #d9e0ef;
-  --color-navy-200: #b3c1df;
-  --color-navy-300: #8da2cf;
-  --color-navy-400: #6b84bf;
-  --color-navy-500: #4a67af;
-  --color-navy-600: #2d4a8a;
-  --color-navy-700: #1a2f5e;
-  --color-navy-800: #0f1d3d;
-  --color-navy-900: #080f24;
-  --color-gold-50: #fef8e7;
-  --color-gold-100: #fcecb8;
-  --color-gold-200: #f9df86;
-  --color-gold-300: #f6d154;
-  --color-gold-400: #f3c42e;
-  --color-gold-500: #d4a61e;
-  --color-gold-600: #a88216;
-  --color-gold-700: #7c5e10;
-  --color-gold-800: #503c0a;
-  --color-gold-900: #241b04;
-  --color-cyan-50: #e6f9fc;
-  --color-cyan-100: #b3edf5;
-  --color-cyan-200: #80e1ee;
-  --color-cyan-300: #4dd5e7;
-  --color-cyan-400: #26c9e0;
-  --color-cyan-500: #00b8d4;
-  --color-cyan-600: #0093a8;
-  --color-cyan-700: #006e7c;
-  --color-cyan-800: #004950;
-  --color-cyan-900: #002428;
-  --font-serif: var(--font-serif), 'Georgia', serif;
-  --font-sans: var(--font-sans), 'Inter', system-ui, sans-serif;
-  --font-arabic: var(--font-arabic), 'Noto Naskh Arabic', 'Amiri', serif;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   html {
@@ -45,7 +11,6 @@
   }
   body {
     @apply bg-white text-navy-900 dark:bg-navy-900 dark:text-white antialiased;
-    font-family: var(--font-sans);
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-serif);
