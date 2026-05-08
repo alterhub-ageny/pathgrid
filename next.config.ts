@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
+const isNetlify = process.env.NETLIFY === 'true';
+
 const nextConfig: NextConfig = {
   images: {
+    unoptimized: isNetlify,
     remotePatterns: [
       { protocol: "https", hostname: "cdn.sanity.io" },
       { protocol: "https", hostname: "images.unsplash.com" },
