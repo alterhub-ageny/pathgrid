@@ -41,26 +41,36 @@ cd pathgrid
 npm install
 ```
 
-### 2. Environment Variables
+### 2. Database (PostgreSQL Required)
+
+This project requires PostgreSQL. For local development:
+
+```bash
+# Option A: Using Docker (easiest)
+docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres
+
+# Option B: Use a free hosted database from neon.tech
+# Then set DATABASE_URL to your connection string
+```
+
+### 3. Environment Variables
 
 Copy `.env.example` to `.env` and configure:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/pathgrid"
 NEXTAUTH_SECRET="your-secret-key"
 NEXTAUTH_URL="http://localhost:3000"
 ```
 
-For SQLite (default), no database setup is needed. For PostgreSQL, update the URL.
-
-### 3. Database Setup
+### 4. Database Setup
 
 ```bash
 npx prisma generate
 npx prisma db push
 ```
 
-### 4. Seed Data
+### 5. Seed Data
 
 ```bash
 npm run seed
@@ -161,7 +171,12 @@ Dedicated Arabic font (Noto Naskh Arabic) loaded for Arabic locale.
 
 ## Deployment on Vercel
 
-### 1. Push to GitHub
+### 1. Set up PostgreSQL
+
+Create a free PostgreSQL database at [Neon](https://neon.tech) or [Supabase](https://supabase.com).
+Copy the connection string.
+
+### 2. Push to GitHub
 
 ```bash
 git add .
@@ -169,19 +184,30 @@ git commit -m "Initial commit"
 git push origin main
 ```
 
-### 2. Connect to Vercel
+### 3. Connect to Vercel
 
 - Import repository
 - Set environment variables in Vercel dashboard:
-  - `DATABASE_URL` - Use a PostgreSQL provider (e.g., Neon, Supabase)
+  - `DATABASE_URL` - Your Neon/Supabase PostgreSQL connection string
   - `NEXTAUTH_SECRET` - Generate with `openssl rand -base64 32`
   - `NEXTAUTH_URL` - Your Vercel domain
 
-### 3. Deploy
+### 4. Deploy
 
 Vercel auto-deploys from the `main` branch.
 
-The `vercel.json` automatically runs Prisma migrations during build.
+### 5. Run Database Migrations
+
+After first deploy, run in your terminal:
+
+```bash
+# Push schema to production database
+npx prisma db push --schema=prisma/schema.prisma
+
+# Or run the seed from a local machine:
+# Set DATABASE_URL to your production URL, then:
+npx tsx scripts/seed.ts
+```
 
 ## Sanity CMS (Optional)
 
