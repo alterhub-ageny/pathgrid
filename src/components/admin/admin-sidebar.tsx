@@ -10,22 +10,23 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
 import { useTranslation } from '@/hooks/use-translation';
+import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { label: 'admin.dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-  { label: 'admin.services', href: '/admin/services', icon: Briefcase },
-  { label: 'admin.portfolio', href: '/admin/portfolio', icon: Image },
-  { label: 'admin.blog', href: '/admin/blog', icon: FileText },
-  { label: 'admin.team', href: '/admin/team', icon: Users },
-  { label: 'admin.testimonials', href: '/admin/testimonials', icon: MessageSquare },
-  { label: 'admin.clients', href: '/admin/clients', icon: Users },
-  { label: 'admin.pipeline', href: '/admin/pipeline', icon: Target },
-  { label: 'admin.accounting', href: '/admin/accounting', icon: BarChart3 },
-  { label: 'admin.invoices', href: '/admin/invoices', icon: DollarSign },
-  { label: 'admin.calendar', href: '/admin/calendar', icon: Calendar },
-  { label: 'admin.staff', href: '/admin/staff', icon: UserCog },
-  { label: 'admin.settings', href: '/admin/settings', icon: Settings },
+  { label: 'admin.dashboard', href: '/admin/dashboard', icon: LayoutDashboard, roles: ['admin', 'staff'] },
+  { label: 'admin.services', href: '/admin/services', icon: Briefcase, roles: ['admin', 'staff'] },
+  { label: 'admin.portfolio', href: '/admin/portfolio', icon: Image, roles: ['admin', 'staff'] },
+  { label: 'admin.blog', href: '/admin/blog', icon: FileText, roles: ['admin', 'staff'] },
+  { label: 'admin.team', href: '/admin/team', icon: Users, roles: ['admin', 'staff'] },
+  { label: 'admin.testimonials', href: '/admin/testimonials', icon: MessageSquare, roles: ['admin', 'staff'] },
+  { label: 'admin.clients', href: '/admin/clients', icon: Users, roles: ['admin'] },
+  { label: 'admin.pipeline', href: '/admin/pipeline', icon: Target, roles: ['admin', 'staff'] },
+  { label: 'admin.accounting', href: '/admin/accounting', icon: BarChart3, roles: ['admin'] },
+  { label: 'admin.invoices', href: '/admin/invoices', icon: DollarSign, roles: ['admin', 'staff'] },
+  { label: 'admin.calendar', href: '/admin/calendar', icon: Calendar, roles: ['admin', 'staff'] },
+  { label: 'admin.staff', href: '/admin/staff', icon: UserCog, roles: ['admin'] },
+  { label: 'admin.settings', href: '/admin/settings', icon: Settings, roles: ['admin'] },
 ];
 
 export function AdminSidebar() {
@@ -33,6 +34,10 @@ export function AdminSidebar() {
   const { sidebarOpen, setSidebarOpen } = useAppStore();
   const { t, locale } = useTranslation();
   const isRtl = useAppStore((s) => s.isRtl);
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role || 'staff';
+
+  const visibleItems = navItems.filter((item) => item.roles.includes(userRole));
 
   const localePath = `/${locale}`;
 
@@ -70,7 +75,7 @@ export function AdminSidebar() {
         </div>
 
         <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-4rem)]">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             const isActive = pathname.includes(item.href);
             return (
               <Link

@@ -69,9 +69,9 @@ export function ChatBot() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-navy-700 dark:bg-gold-500 text-white dark:text-navy-900 shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-navy-700 dark:bg-gold-500 text-white dark:text-navy-900 shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
       >
-        <MessageCircle className="w-6 h-6" />
+        <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />
       </button>
 
       <AnimatePresence>
@@ -80,8 +80,8 @@ export function ChatBot() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-navy-800 rounded-2xl shadow-2xl border border-navy-100 dark:border-navy-700 overflow-hidden"
-            style={{ height: '520px' }}
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-96 bg-white dark:bg-navy-800 rounded-2xl shadow-2xl border border-navy-100 dark:border-navy-700 overflow-hidden"
+            style={{ height: 'min(520px, 80vh)' }}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-navy-100 dark:border-navy-700 bg-navy-50 dark:bg-navy-900">
               <div className="flex items-center gap-2">

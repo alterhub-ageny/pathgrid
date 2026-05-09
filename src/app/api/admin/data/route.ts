@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 
@@ -12,6 +13,7 @@ const models: Record<string, any> = {
   clients: prisma.user,
   invoices: prisma.invoice,
   leads: prisma.lead,
+  tasks: prisma.task,
 };
 
 export async function GET(request: Request) {
@@ -43,6 +45,11 @@ export async function POST(request: Request) {
 
     let result;
     if (action === 'create') {
+      // Hash password for user creation
+      if (type === 'clients' && data.password) {
+        data.passwordHash = await bcrypt.hash(data.password, 12);
+        delete data.password;
+      }
       result = await model.create({ data });
     } else if (action === 'update') {
       const { id, ...updateData } = data;

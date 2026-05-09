@@ -34,19 +34,9 @@ export default function LoginPage() {
       return;
     }
 
-    try {
-      const sessionRes = await fetch('/api/auth/session');
-      const session = await sessionRes.json();
-      const role = session?.user?.role;
-
-      if (role === 'client') {
-        router.push(`/${locale}/client-portal`);
-      } else {
-        router.push(`/${locale}/admin/dashboard`);
-      }
-    } catch {
-      router.push(`/${locale}/admin/dashboard`);
-    }
+    // Full page redirect to ensure fresh session cookie
+    // Admin layout will re-check role and redirect clients
+    window.location.href = `/${locale}/admin/dashboard`;
   };
 
   return (

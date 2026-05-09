@@ -5,6 +5,8 @@ import { TrendingUp, TrendingDown, DollarSign, Users, Target, FileText } from 'l
 import { useTranslation } from '@/hooks/use-translation';
 import { Card } from '@/components/ui/card';
 import { DashboardCharts } from '@/components/charts/dashboard-charts';
+import { AISummary } from '@/components/dashboard/ai-summary';
+import { TaskManager } from '@/components/dashboard/task-manager';
 import { formatCurrency } from '@/lib/utils';
 
 const stats = [
@@ -57,47 +59,8 @@ export default function AdminDashboardPage() {
       <DashboardCharts />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <h3 className="text-lg font-semibold mb-4">{t('admin.recentActivity')}</h3>
-          <div className="space-y-4">
-            {[
-              { action: 'New lead added', detail: 'Sarah Johnson - TechCorp', time: '2 min ago' },
-              { action: 'Invoice paid', detail: 'INV-2025-0042 - $12,000', time: '15 min ago' },
-              { action: 'Project updated', detail: 'NexGen Platform - Progress: 75%', time: '1 hour ago' },
-              { action: 'Meeting completed', detail: 'Q4 Strategy with Elevate', time: '2 hours ago' },
-              { action: 'Proposal sent', detail: 'HealthPlus Mobile App', time: '3 hours ago' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-start gap-3 pb-4 border-b border-navy-100 dark:border-navy-700 last:border-0 last:pb-0">
-                <div className="w-2 h-2 rounded-full bg-gold-500 mt-2 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-navy-900 dark:text-white">{item.action}</p>
-                  <p className="text-xs text-navy-400">{item.detail}</p>
-                </div>
-                <span className="text-xs text-navy-400 whitespace-nowrap">{item.time}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card>
-          <h3 className="text-lg font-semibold mb-4">{t('admin.quickActions')}</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Add Lead', desc: 'New pipeline entry' },
-              { label: 'Create Invoice', desc: 'Bill a client' },
-              { label: 'New Project', desc: 'Start a project' },
-              { label: 'Write Blog', desc: 'Publish article' },
-            ].map((action, i) => (
-              <button
-                key={i}
-                className="p-4 rounded-xl border border-navy-200 dark:border-navy-700 hover:bg-navy-50 dark:hover:bg-navy-800 transition-colors text-left"
-              >
-                <p className="text-sm font-semibold text-navy-900 dark:text-white">{action.label}</p>
-                <p className="text-xs text-navy-400 mt-0.5">{action.desc}</p>
-              </button>
-            ))}
-          </div>
-        </Card>
+        <AISummary />
+        <TaskManager />
       </div>
     </div>
   );

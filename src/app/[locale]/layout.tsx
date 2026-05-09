@@ -8,6 +8,7 @@ import { SessionProvider } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
+import { ChatBot } from '@/components/admin/chat-bot';
 import { useAppStore } from '@/store/app-store';
 import { localeDirections } from '@/lib/i18n';
 import type { Locale } from '@/types';
@@ -55,6 +56,7 @@ export default function LocaleLayout({ children }: { children: React.ReactNode }
           {!isAdmin && !isClientPortal && !isAuth && <Header />}
           <main className="min-h-screen">{children}</main>
           {!isAdmin && !isClientPortal && !isAuth && <Footer />}
+          {(isAdmin || isClientPortal) && <ChatBot />}
         </body>
       </html>
     </SessionProvider>
