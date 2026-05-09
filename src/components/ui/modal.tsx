@@ -29,12 +29,12 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 overflow-y-auto">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
             onClick={onClose}
           />
           <motion.div
@@ -42,7 +42,7 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className={cn(
-              'relative bg-white dark:bg-navy-800 rounded-2xl shadow-2xl w-full',
+              'relative bg-white dark:bg-navy-800 rounded-2xl shadow-2xl w-full my-8',
               sizes[size],
               className
             )}
@@ -55,7 +55,7 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
                 </button>
               </div>
             )}
-            <div className="p-6">{children}</div>
+            <div className="p-6 max-h-[70vh] overflow-y-auto">{children}</div>
           </motion.div>
         </div>
       )}

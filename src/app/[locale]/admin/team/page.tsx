@@ -10,24 +10,24 @@ export default function AdminTeamPage() {
   return (
     <CrudTable
       title={t('admin.team')}
-      subtitle="Manage your team members"
+      subtitle={t('admin.fields.manageTeam')}
       type="team"
       columns={[
-        { key: 'name', label: 'Name' },
-        { key: 'role', label: 'Role' },
-        { key: 'email', label: 'Email' },
-        { key: 'active', label: 'Status', render: (v) => <Badge variant={v ? 'success' : 'warning'}>{v ? 'Active' : 'Inactive'}</Badge> },
+        { key: 'name', label: t('admin.fields.name') },
+        { key: 'role', label: t('admin.fields.role') },
+        { key: 'email', label: t('admin.fields.email') },
+        { key: 'active', label: t('admin.fields.status'), render: (v) => <Badge variant={v ? 'success' : 'warning'}>{v ? t('admin.active') : t('admin.inactive')}</Badge> },
       ]}
       formFields={[
-        { key: 'name', label: 'Name' },
-        { key: 'slug', label: 'Slug' },
-        { key: 'role', label: 'Role' },
-        { key: 'bio', label: 'Bio', type: 'textarea' },
-        { key: 'image', label: 'Image', type: 'image' },
-        { key: 'email', label: 'Email' },
-        { key: 'linkedin', label: 'LinkedIn URL' },
-        { key: 'order', label: 'Order', type: 'number' },
-        { key: 'active', label: 'Active', type: 'checkbox' },
+        { key: 'name', label: t('admin.fields.name') },
+        { key: 'slug', label: t('admin.fields.slug') },
+        { key: 'role', label: t('admin.fields.role') },
+        { key: 'bio', label: t('admin.fields.bio'), type: 'textarea' },
+        { key: 'image', label: t('admin.fields.image'), type: 'image' },
+        { key: 'email', label: t('admin.fields.email') },
+        { key: 'linkedin', label: t('admin.fields.linkedin') },
+        { key: 'order', label: t('admin.fields.order'), type: 'number' },
+        { key: 'active', label: t('admin.fields.active'), type: 'checkbox' },
       ]}
     />
   );

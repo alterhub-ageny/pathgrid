@@ -12,27 +12,27 @@ export default function AdminPortfolioPage() {
   return (
     <CrudTable
       title={t('admin.portfolio')}
-      subtitle="Manage your case studies and portfolio items"
+      subtitle={t('admin.fields.managePortfolio')}
       type="portfolio"
       columns={[
-        { key: 'title', label: 'Project' },
-        { key: 'client', label: 'Client' },
-        { key: 'industry', label: 'Industry' },
-        { key: 'published', label: 'Status', render: (v) => <Badge variant={v ? 'success' : 'warning'}>{v ? 'Published' : 'Draft'}</Badge> },
+        { key: 'title', label: t('admin.fields.title') },
+        { key: 'client', label: t('admin.fields.client') },
+        { key: 'industry', label: t('admin.fields.industry') },
+        { key: 'published', label: t('admin.fields.status'), render: (v) => <Badge variant={v ? 'success' : 'warning'}>{v ? t('admin.published') : t('admin.draft')}</Badge> },
       ]}
       formFields={[
-        { key: 'title', label: 'Title' },
-        { key: 'slug', label: 'Slug' },
-        { key: 'description', label: 'Description', type: 'textarea' },
-        { key: 'client', label: 'Client' },
-        { key: 'industry', label: 'Industry', type: 'select', options: industries },
-        { key: 'technologies', label: 'Technologies' },
-        { key: 'result', label: 'Result', type: 'textarea' },
-        { key: 'image', label: 'Image', type: 'image' },
-        { key: 'url', label: 'Project URL' },
-        { key: 'tags', label: 'Tags (comma separated)' },
-        { key: 'featured', label: 'Featured', type: 'checkbox' },
-        { key: 'published', label: 'Published', type: 'checkbox' },
+        { key: 'title', label: t('admin.fields.title') },
+        { key: 'slug', label: t('admin.fields.slug') },
+        { key: 'description', label: t('admin.fields.description'), type: 'richtext' },
+        { key: 'client', label: t('admin.fields.client') },
+        { key: 'industry', label: t('admin.fields.industry'), type: 'select', options: industries },
+        { key: 'technologies', label: t('admin.fields.technologies') },
+        { key: 'result', label: t('admin.fields.result'), type: 'richtext' },
+        { key: 'image', label: t('admin.fields.image'), type: 'image' },
+        { key: 'url', label: t('admin.fields.url') },
+        { key: 'tags', label: t('admin.fields.tags') },
+        { key: 'featured', label: t('admin.fields.featured'), type: 'checkbox' },
+        { key: 'published', label: t('admin.fields.published'), type: 'checkbox' },
       ]}
     />
   );

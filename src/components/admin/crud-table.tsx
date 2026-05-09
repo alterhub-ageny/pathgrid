@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, Upload, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Upload, Loader2, Download, FileUp } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 interface Column {
   key: string;
@@ -39,6 +41,9 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
   const [loading, setLoading] = useState(!initialData);
   const [uploading, setUploading] = useState<string | null>(null);
   const [imagePreviews, setImagePreviews] = useState<Record<string, string>>({});
+  const [importing, setImporting] = useState(false);
+  const importRef = useRef<HTMLInputElement>(null);
+  const [richtextValues, setRichtextValues] = useState<Record<string, string>>({});
 
   const fetchData = useCallback(async () => {
     if (initialData) return;
@@ -63,10 +68,18 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
   }, [initialData]);
 
   useEffect(() => {
-    if (!modal.open) {
-      setImagePreviews({});
-    }
+    if (!modal.open) { setImagePreviews({}); setRichtextValues({}); }
   }, [modal.open]);
+
+  useEffect(() => {
+    if (modal.edit && modal.open) {
+      const vals: Record<string, string> = {};
+      formFields?.forEach((f) => {
+        if (f.type === 'richtext') vals[f.key] = modal.edit[f.key] || '';
+      });
+      setRichtextValues((prev) => ({ ...prev, ...vals }));
+    }
+  }, [modal.edit, modal.open, formFields]);
 
   const filtered = data.filter((row) =>
     Object.values(row).some((v) => String(v).toLowerCase().includes(search.toLowerCase()))
@@ -110,6 +123,8 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
         item[f.key] = formData.get(f.key) === 'on';
       } else if (f.type === 'image') {
         item[f.key] = imagePreviews[f.key] || modal.edit?.[f.key] || '';
+      } else if (f.type === 'richtext') {
+        item[f.key] = richtextValues[f.key] || '';
       } else {
         item[f.key] = formData.get(f.key) || '';
       }
@@ -139,6 +154,75 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
       else setTimeout(() => window.location.reload(), 500);
     } catch {
       toast.error('Failed to delete');
+    }
+  };
+
+  const handleExport = () => {
+    const exportData = data.map((row: any) => {
+      const obj: Record<string, any> = {};
+      columns.forEach((col) => {
+        obj[col.label] = row[col.key] !== undefined ? String(row[col.key]) : '';
+      });
+      return obj;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, type);
+    const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    const blob = new Blob([buf], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${type}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${data.length} rows`);
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(ws);
+
+      if (rows.length === 0) {
+        toast.error('No data found in file');
+        return;
+      }
+
+      const colKeyMap: Record<string, string> = {};
+      columns.forEach((col) => { colKeyMap[col.label.toLowerCase()] = col.key; });
+      formFields?.forEach((f) => { colKeyMap[f.label.toLowerCase()] = f.key; });
+
+      let imported = 0;
+      for (const row of rows) {
+        const item: any = {};
+        for (const [header, value] of Object.entries(row)) {
+          const key = colKeyMap[header.toLowerCase()] || header;
+          item[key] = value;
+        }
+        try {
+          await callApi('create', item);
+          imported++;
+        } catch {
+          // skip failed rows
+        }
+      }
+
+      toast.success(`Imported ${imported} of ${rows.length} rows`);
+      if (!initialData) fetchData();
+      else setTimeout(() => window.location.reload(), 500);
+    } catch {
+      toast.error('Import failed');
+    } finally {
+      setImporting(false);
+      if (importRef.current) importRef.current.value = '';
     }
   };
 
@@ -181,6 +265,19 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
       );
     }
 
+    if (field.type === 'richtext') {
+      return (
+        <div key={field.key}>
+          <label className="block text-sm font-medium text-navy-700 dark:text-white mb-1.5">{field.label}</label>
+          <RichTextEditor
+            value={richtextValues[field.key] ?? modal.edit?.[field.key] ?? ''}
+            onChange={(val) => setRichtextValues((prev) => ({ ...prev, [field.key]: val }))}
+            placeholder={field.label}
+          />
+        </div>
+      );
+    }
+
     if (field.type === 'image') {
       return (
         <div key={field.key}>
@@ -219,10 +316,23 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
           <h1 className="text-3xl font-serif font-bold">{title}</h1>
           {subtitle && <p className="text-navy-500 dark:text-navy-400 mt-1 text-sm">{subtitle}</p>}
         </div>
-        <button onClick={() => setModal({ open: true })}
-          className="flex items-center gap-2 px-4 py-2.5 bg-navy-700 dark:bg-gold-500 text-white dark:text-navy-900 rounded-xl text-sm font-medium">
-          <Plus className="w-4 h-4" />{t('common.create')}
-        </button>
+        <div className="flex items-center gap-2">
+          <input ref={importRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImport} />
+          <button onClick={() => importRef.current?.click()} disabled={importing}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-navy-200 dark:border-navy-600 text-navy-700 dark:text-white hover:bg-navy-50 dark:hover:bg-navy-800 transition-colors text-sm font-medium disabled:opacity-50">
+            {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
+            {t('common.import')}
+          </button>
+          <button onClick={handleExport}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-navy-200 dark:border-navy-600 text-navy-700 dark:text-white hover:bg-navy-50 dark:hover:bg-navy-800 transition-colors text-sm font-medium">
+            <Download className="w-4 h-4" />
+            {t('common.export')}
+          </button>
+          <button onClick={() => setModal({ open: true })}
+            className="flex items-center gap-2 px-4 py-2.5 bg-navy-700 dark:bg-gold-500 text-white dark:text-navy-900 rounded-xl text-sm font-medium">
+            <Plus className="w-4 h-4" />{t('common.create')}
+          </button>
+        </div>
       </div>
 
       <div className="relative">

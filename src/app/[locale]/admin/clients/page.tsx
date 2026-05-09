@@ -11,21 +11,21 @@ export default function AdminClientsPage() {
   return (
     <CrudTable
       title={t('admin.clients')}
-      subtitle="Manage your clients"
+      subtitle={t('admin.fields.manageClients')}
       type="clients"
       columns={[
-        { key: 'name', label: 'Name' },
-        { key: 'email', label: 'Email' },
-        { key: 'company', label: 'Company' },
-        { key: 'role', label: 'Role', render: (v) => <Badge variant="info">{v || 'client'}</Badge> },
-        { key: 'createdAt', label: 'Client Since', render: (v) => formatDate(v) },
+        { key: 'name', label: t('admin.fields.name') },
+        { key: 'email', label: t('admin.fields.email') },
+        { key: 'company', label: t('admin.fields.company') },
+        { key: 'role', label: t('admin.fields.role'), render: (v) => <Badge variant="info">{v || 'client'}</Badge> },
+        { key: 'createdAt', label: t('admin.fields.date'), render: (v) => formatDate(v) },
       ]}
       formFields={[
-        { key: 'name', label: 'Name' },
-        { key: 'email', label: 'Email' },
-        { key: 'company', label: 'Company' },
-        { key: 'phone', label: 'Phone' },
-        { key: 'role', label: 'Role' },
+        { key: 'name', label: t('admin.fields.name') },
+        { key: 'email', label: t('admin.fields.email') },
+        { key: 'company', label: t('admin.fields.company') },
+        { key: 'phone', label: t('admin.fields.phone') },
+        { key: 'role', label: t('admin.fields.role') },
       ]}
     />
   );

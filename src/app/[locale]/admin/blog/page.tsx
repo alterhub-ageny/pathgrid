@@ -12,34 +12,34 @@ export default function AdminBlogPage() {
   return (
     <CrudTable
       title={t('admin.blog')}
-      subtitle="Manage blog posts and articles"
+      subtitle={t('admin.fields.manageBlog')}
       type="blog"
       columns={[
-        { key: 'title', label: 'Title' },
-        { key: 'author', label: 'Author' },
-        { key: 'category', label: 'Category', render: (v) => v && <Badge variant="info">{v}</Badge> },
+        { key: 'title', label: t('admin.fields.title') },
+        { key: 'author', label: t('admin.fields.author') },
+        { key: 'category', label: t('admin.fields.category'), render: (v) => v && <Badge variant="info">{v}</Badge> },
         {
           key: 'published',
-          label: 'Status',
-          render: (v) => <Badge variant={v ? 'success' : 'warning'}>{v ? 'Published' : 'Draft'}</Badge>,
+          label: t('admin.fields.status'),
+          render: (v) => <Badge variant={v ? 'success' : 'warning'}>{v ? t('admin.published') : t('admin.draft')}</Badge>,
         },
         {
           key: 'featured',
-          label: 'Featured',
+          label: t('admin.fields.featured'),
           render: (v) => (v ? '⭐' : '—'),
         },
       ]}
       formFields={[
-        { key: 'title', label: 'Title' },
-        { key: 'slug', label: 'Slug' },
-        { key: 'excerpt', label: 'Excerpt', type: 'textarea' },
-        { key: 'content', label: 'Content', type: 'textarea' },
-        { key: 'image', label: 'Image', type: 'image' },
-        { key: 'category', label: 'Category', type: 'select', options: categories },
-        { key: 'tags', label: 'Tags (comma separated)' },
-        { key: 'author', label: 'Author' },
-        { key: 'published', label: 'Published', type: 'checkbox' },
-        { key: 'featured', label: 'Featured', type: 'checkbox' },
+        { key: 'title', label: t('admin.fields.title') },
+        { key: 'slug', label: t('admin.fields.slug') },
+        { key: 'excerpt', label: t('admin.fields.excerpt'), type: 'textarea' },
+        { key: 'content', label: t('admin.fields.content'), type: 'richtext' },
+        { key: 'image', label: t('admin.fields.image'), type: 'image' },
+        { key: 'category', label: t('admin.fields.category'), type: 'select', options: categories },
+        { key: 'tags', label: t('admin.fields.tags') },
+        { key: 'author', label: t('admin.fields.author') },
+        { key: 'published', label: t('admin.fields.published'), type: 'checkbox' },
+        { key: 'featured', label: t('admin.fields.featured'), type: 'checkbox' },
       ]}
     />
   );

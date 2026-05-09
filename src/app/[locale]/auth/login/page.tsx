@@ -31,7 +31,20 @@ export default function LoginPage() {
     if (result?.error) {
       setError('Invalid credentials');
       setLoading(false);
-    } else {
+      return;
+    }
+
+    try {
+      const sessionRes = await fetch('/api/auth/session');
+      const session = await sessionRes.json();
+      const role = session?.user?.role;
+
+      if (role === 'client') {
+        router.push(`/${locale}/client-portal`);
+      } else {
+        router.push(`/${locale}/admin/dashboard`);
+      }
+    } catch {
       router.push(`/${locale}/admin/dashboard`);
     }
   };

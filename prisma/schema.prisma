@@ -351,3 +351,13 @@ model CalendarEvent {
   type      String   @default("general")
   createdAt DateTime @default(now())
 }
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+}

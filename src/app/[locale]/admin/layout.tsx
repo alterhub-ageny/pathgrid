@@ -1,14 +1,21 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useMemo } from 'react';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { ChatBot } from '@/components/admin/chat-bot';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const localePath = useMemo(() => {
+    const match = pathname?.match(/^\/(en|fr|ar)/);
+    return match?.[1] || 'en';
+  }, [pathname]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -26,6 +33,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!session) return null;
 
+  const role = (session.user as any)?.role;
+  if (role === 'client') {
+    router.push(`/${localePath}/client-portal`);
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-navy-50 dark:bg-navy-950 flex">
       <AdminSidebar />
@@ -35,6 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {children}
         </main>
       </div>
-    </div>
+      <ChatBot />
+    </div>  
   );
 }

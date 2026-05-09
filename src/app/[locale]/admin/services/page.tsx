@@ -10,23 +10,23 @@ export default function AdminServicesPage() {
   return (
     <CrudTable
       title={t('admin.services')}
-      subtitle="Manage your service offerings"
+      subtitle={t('admin.fields.manageServices')}
       type="services"
       columns={[
-        { key: 'title', label: 'Service' },
-        { key: 'priceTier', label: 'Pricing' },
-        { key: 'order', label: 'Order' },
-        { key: 'active', label: 'Status', render: (v) => <Badge variant={v ? 'success' : 'warning'}>{v ? 'Active' : 'Inactive'}</Badge> },
+        { key: 'title', label: t('admin.fields.title') },
+        { key: 'priceTier', label: t('admin.fields.priceTier') },
+        { key: 'order', label: t('admin.fields.order') },
+        { key: 'active', label: t('admin.fields.status'), render: (v) => <Badge variant={v ? 'success' : 'warning'}>{v ? t('admin.active') : t('admin.inactive')}</Badge> },
       ]}
       formFields={[
-        { key: 'title', label: 'Title' },
-        { key: 'slug', label: 'Slug' },
-        { key: 'description', label: 'Description', type: 'textarea' },
-        { key: 'icon', label: 'Icon' },
-        { key: 'priceTier', label: 'Price Tier' },
-        { key: 'features', label: 'Features (comma separated)' },
-        { key: 'order', label: 'Order', type: 'number' },
-        { key: 'active', label: 'Active', type: 'checkbox' },
+        { key: 'title', label: t('admin.fields.title') },
+        { key: 'slug', label: t('admin.fields.slug') },
+        { key: 'description', label: t('admin.fields.description'), type: 'textarea' },
+        { key: 'icon', label: t('admin.fields.icon') },
+        { key: 'priceTier', label: t('admin.fields.priceTier') },
+        { key: 'features', label: t('admin.fields.features') },
+        { key: 'order', label: t('admin.fields.order'), type: 'number' },
+        { key: 'active', label: t('admin.fields.active'), type: 'checkbox' },
       ]}
     />
   );
