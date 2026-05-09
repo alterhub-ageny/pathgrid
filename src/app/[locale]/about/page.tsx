@@ -2,28 +2,19 @@
 
 import { motion } from 'framer-motion';
 import { useTranslation } from '@/hooks/use-translation';
+import { useData } from '@/hooks/use-data';
 import { Card } from '@/components/ui/card';
 import { Target, Eye, Users } from 'lucide-react';
 
-const team = [
-  { name: 'Alex Mercer', role: 'CEO & Founder', bio: 'Visionary leader with 15+ years in digital strategy.' },
-  { name: 'Lena Park', role: 'Creative Director', bio: 'Award-winning designer passionate about brand storytelling.' },
-  { name: 'David Kim', role: 'Technical Lead', bio: 'Full-stack architect building scalable digital solutions.' },
-  { name: 'Priya Sharma', role: 'Strategy Director', bio: 'Data-driven strategist focused on measurable growth.' },
-];
-
 export default function AboutPage() {
   const { t, locale } = useTranslation();
+  const { data: team } = useData<any>('team');
 
   return (
     <div className="pt-24 lg:pt-28">
       <section className="py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-3xl"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl">
             <h1 className="text-5xl lg:text-7xl font-serif font-bold mb-6">{t('about.title')}</h1>
             <p className="text-xl text-navy-500 dark:text-navy-300 leading-relaxed">{t('about.subtitle')}</p>
           </motion.div>
@@ -50,20 +41,14 @@ export default function AboutPage() {
 
       <section className="py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl lg:text-5xl font-serif font-bold mb-12"
-          >
-            {t('about.team')}
-          </motion.h2>
+          <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className="text-4xl lg:text-5xl font-serif font-bold mb-12">{t('about.team')}</motion.h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {team.map((member, i) => (
-              <Card key={i} delay={i * 0.1}>
+            {(team.length > 0 ? team : []).map((member: any, i: number) => (
+              <Card key={member.id} delay={i * 0.1}>
                 <div className="w-16 h-16 rounded-full bg-navy-100 dark:bg-navy-700 flex items-center justify-center mb-4">
                   <span className="text-xl font-serif font-bold text-navy-700 dark:text-gold-500">
-                    {member.name.split(' ').map(n => n[0]).join('')}
+                    {member.name.split(' ').map((n: string) => n[0]).join('')}
                   </span>
                 </div>
                 <h3 className="text-lg font-serif font-semibold">{member.name}</h3>

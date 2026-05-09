@@ -13,6 +13,7 @@ export default function AdminSettingsPage() {
   const { t } = useTranslation();
   const { theme, setTheme } = useAppStore();
   const [saving, setSaving] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +22,50 @@ export default function AdminSettingsPage() {
       toast.success('Settings saved');
       setSaving(false);
     }, 500);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const currentPassword = formData.get('currentPassword') as string;
+    const newPassword = formData.get('newPassword') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error('All fields are required');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        toast.success('Password changed successfully');
+        form.reset();
+      } else {
+        toast.error(json.error || 'Failed to change password');
+      }
+    } catch {
+      toast.error('Failed to change password');
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   return (
@@ -69,12 +114,12 @@ export default function AdminSettingsPage() {
         </Card>
 
         <Card>
-          <h3 className="text-lg font-semibold mb-4">Security</h3>
-          <form onSubmit={(e) => { e.preventDefault(); toast.success('Password updated'); }} className="space-y-4">
-            <Input name="currentPassword" label="Current Password" type="password" />
-            <Input name="newPassword" label="New Password" type="password" />
-            <Input name="confirmPassword" label="Confirm Password" type="password" />
-            <Button type="submit">{t('common.save')}</Button>
+          <h3 className="text-lg font-semibold mb-4">Change Password</h3>
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <Input name="currentPassword" label="Current Password" type="password" required />
+            <Input name="newPassword" label="New Password" type="password" required />
+            <Input name="confirmPassword" label="Confirm Password" type="password" required />
+            <Button type="submit" loading={changingPassword}>{t('common.save')}</Button>
           </form>
         </Card>
       </div>

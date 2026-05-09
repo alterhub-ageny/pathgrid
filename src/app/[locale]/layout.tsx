@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { Inter, Playfair_Display, Noto_Naskh_Arabic } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { SessionProvider } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { useAppStore } from '@/store/app-store';
@@ -22,8 +23,13 @@ const notoNaskh = Noto_Naskh_Arabic({
 
 export default function LocaleLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
+  const pathname = usePathname();
   const locale = (params?.locale as Locale) || 'en';
-  const { setLocale, setSidebarOpen } = useAppStore();
+  const { setLocale } = useAppStore();
+
+  const isAdmin = pathname?.includes('/admin/') || pathname?.endsWith('/admin');
+  const isClientPortal = pathname?.includes('/client-portal/') || pathname?.endsWith('/client-portal');
+  const isAuth = pathname?.includes('/auth/');
 
   useEffect(() => {
     setLocale(locale);
@@ -46,9 +52,9 @@ export default function LocaleLayout({ children }: { children: React.ReactNode }
       >
         <body className="min-h-screen bg-white dark:bg-navy-900 text-navy-900 dark:text-white antialiased">
           <Toaster position={dir === 'rtl' ? 'top-left' : 'top-right'} richColors />
-          <Header />
+          {!isAdmin && !isClientPortal && !isAuth && <Header />}
           <main className="min-h-screen">{children}</main>
-          <Footer />
+          {!isAdmin && !isClientPortal && !isAuth && <Footer />}
         </body>
       </html>
     </SessionProvider>
