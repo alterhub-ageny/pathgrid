@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { logActivity } from '@/lib/activity';
 
 const AI_API_KEY = process.env.AI_API_KEY || '';
 const AI_API_ENDPOINT = process.env.AI_API_ENDPOINT || 'https://api.openai.com/v1/chat/completions';
@@ -32,6 +33,8 @@ You can help with:
 5. General business strategy
 6. Creative and design guidance
 
+If a visitor asks to speak to a human or seems frustrated, suggest they click the "Talk to us" button above to message the team directly.
+
 Be friendly, professional, and concise. Do NOT use markdown formatting (no **, ##, *, or bullet symbols). Write in plain text only. If you don't know something, be honest about it. Keep responses under 300 words unless asked for detail.`;
 }
 
@@ -61,11 +64,75 @@ async function saveChatMessages(sessionId: string, messages: { role: string; con
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    const { message, sessionId, locale } = await request.json();
+    const authSession = await getServerSession(authOptions);
+    const { message, sessionId, locale, action } = await request.json();
     if (!message) return NextResponse.json({ error: 'Message required' }, { status: 400 });
 
     const chatSessionId = sessionId || `session_${Date.now()}`;
+
+    // Handle human handoff
+    if (action === 'handoff') {
+      const { name, email, subject } = await request.json();
+      const userId = (authSession?.user as any)?.id;
+
+      let clientId = userId;
+
+      // For unauthenticated visitors, find or create a user
+      if (!clientId && email) {
+        let client = await prisma.user.findUnique({ where: { email } }).catch(() => null);
+        if (!client) {
+          client = await prisma.user.create({
+            data: { name: name || email, email, role: 'client' },
+          }).catch(() => null);
+        }
+        clientId = client?.id;
+      }
+
+      if (!clientId) {
+        return NextResponse.json({ error: 'Could not identify user' }, { status: 400 });
+      }
+
+      try {
+        const conversation = await prisma.conversation.create({
+          data: {
+            subject: subject || 'Chat Handoff: ' + (name || email || 'Visitor'),
+            clientId,
+            adminId: null,
+          },
+        });
+
+        await prisma.message.create({
+          data: {
+            content: message || `Visitor ${name || email || 'unknown'} requested to speak with a human.${message ? `\n\nInitial message: ${message}` : ''}`,
+            senderId: clientId,
+            conversationId: conversation.id,
+          },
+        });
+
+        // Notify admins
+        const admins = await prisma.user.findMany({ where: { role: { in: ['admin', 'staff'] } } });
+        for (const admin of admins) {
+          await prisma.notification.create({
+            data: {
+              userId: admin.id,
+              type: 'info',
+              title: 'New chat handoff request',
+              message: `${name || email || 'A visitor'} wants to talk to a human`,
+              link: `/${admin.locale || 'en'}/admin/messages`,
+            },
+          }).catch(() => {});
+        }
+
+        logActivity(clientId, 'handoff', `Chat handoff requested by ${name || email || clientId}`, conversation.id, 'conversations');
+
+        return NextResponse.json({
+          reply: `Thank you${name ? ` ${name}` : ''}! A team member will get back to you shortly. We've created a conversation in your account where you can continue this discussion.`,
+          conversationId: conversation.id,
+        });
+      } catch (err: any) {
+        return NextResponse.json({ error: err.message || 'Failed to create handoff' }, { status: 500 });
+      }
+    }
 
     // Dashboard summary special case
     if (chatSessionId === 'dashboard-summary') {
@@ -74,7 +141,7 @@ export async function POST(request: Request) {
 
     if (AI_API_KEY) {
       try {
-        const recent = session ? await getChatHistory(chatSessionId) : [];
+        const recent = authSession ? await getChatHistory(chatSessionId) : [];
 
         const messages = [
           { role: 'system', content: buildSystemPrompt(locale || 'en') },
@@ -94,7 +161,7 @@ export async function POST(request: Request) {
         if (res.ok) {
           const data = await res.json();
           const reply = data.choices?.[0]?.message?.content || 'No response';
-          if (session) await saveChatMessages(chatSessionId, [
+          if (authSession) await saveChatMessages(chatSessionId, [
             { role: 'user', content: message },
             { role: 'assistant', content: reply },
           ]);
@@ -106,7 +173,7 @@ export async function POST(request: Request) {
     }
 
     // Fallback response
-    if (session) await saveChatMessages(chatSessionId, [
+    if (authSession) await saveChatMessages(chatSessionId, [
       { role: 'user', content: message },
       { role: 'assistant', content: FALLBACK },
     ]);
