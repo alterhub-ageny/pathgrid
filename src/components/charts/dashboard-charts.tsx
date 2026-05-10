@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { Download, Calendar } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/use-translation';
+import { useAppStore } from '@/store/app-store';
 import { formatCurrency } from '@/lib/utils';
 
 const revenueData = [
@@ -52,7 +53,8 @@ const expenseByCategory = [
   { name: 'Other', value: 8 },
 ];
 
-const COLORS = ['#1a2f5e', '#d4a61e', '#00b8d4', '#4a67af', '#f6d154'];
+const COLORS_LIGHT = ['#1a2f5e', '#d4a61e', '#00b8d4', '#4a67af', '#f6d154'];
+const COLORS_DARK = ['#d4a61e', '#60a5fa', '#22d3ee', '#a78bfa', '#fbbf24'];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -73,6 +75,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function DashboardCharts() {
   const { t } = useTranslation();
+  const theme = useAppStore((s) => s.theme);
+  const isDark = theme === 'dark';
+  const COLORS = isDark ? COLORS_DARK : COLORS_LIGHT;
+  const gridStroke = isDark ? '#334155' : '#e5e7eb';
+  const navyColor = isDark ? '#d4a61e' : '#1a2f5e';
+  const goldColor = isDark ? '#fbbf24' : '#d4a61e';
+  const cyanColor = '#00b8d4';
 
   const handleExport = (format: 'pdf' | 'csv') => {
     if (format === 'csv') {
@@ -110,20 +119,20 @@ export function DashboardCharts() {
             <AreaChart data={revenueData}>
               <defs>
                 <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#1a2f5e" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#1a2f5e" stopOpacity={0} />
+                  <stop offset="5%" stopColor={navyColor} stopOpacity={isDark ? 0.2 : 0.3} />
+                  <stop offset="95%" stopColor={navyColor} stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#d4a61e" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#d4a61e" stopOpacity={0} />
+                  <stop offset="5%" stopColor={goldColor} stopOpacity={isDark ? 0.2 : 0.3} />
+                  <stop offset="95%" stopColor={goldColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:opacity-20" />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
               <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
               <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="revenue" stroke="#1a2f5e" fill="url(#revGrad)" strokeWidth={2} name="Revenue" />
-              <Area type="monotone" dataKey="expenses" stroke="#d4a61e" fill="url(#expGrad)" strokeWidth={2} name="Expenses" />
+              <Area type="monotone" dataKey="revenue" stroke={navyColor} fill="url(#revGrad)" strokeWidth={2} name="Revenue" />
+              <Area type="monotone" dataKey="expenses" stroke={goldColor} fill="url(#expGrad)" strokeWidth={2} name="Expenses" />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
@@ -132,11 +141,11 @@ export function DashboardCharts() {
           <h3 className="text-lg font-semibold mb-4">Pipeline Funnel</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={pipelineData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:opacity-20" />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
               <XAxis type="number" stroke="#9ca3af" fontSize={12} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
               <YAxis dataKey="stage" type="category" stroke="#9ca3af" fontSize={12} width={80} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="value" fill="#1a2f5e" radius={[0, 4, 4, 0]} name="value" />
+              <Bar dataKey="value" fill={navyColor} radius={[0, 4, 4, 0]} name="value" />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -145,14 +154,14 @@ export function DashboardCharts() {
           <h3 className="text-lg font-semibold mb-4">Web Traffic Sources</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={trafficData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:opacity-20" />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
               <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
               <YAxis stroke="#9ca3af" fontSize={12} />
               <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Line type="monotone" dataKey="organic" stroke="#1a2f5e" strokeWidth={2} dot={false} name="Organic" />
-              <Line type="monotone" dataKey="paid" stroke="#d4a61e" strokeWidth={2} dot={false} name="Paid" />
-              <Line type="monotone" dataKey="referral" stroke="#00b8d4" strokeWidth={2} dot={false} name="Referral" />
+              <Legend wrapperStyle={{ color: isDark ? '#cbd5e1' : undefined }} />
+              <Line type="monotone" dataKey="organic" stroke={navyColor} strokeWidth={2} dot={false} name="Organic" />
+              <Line type="monotone" dataKey="paid" stroke={goldColor} strokeWidth={2} dot={false} name="Paid" />
+              <Line type="monotone" dataKey="referral" stroke={cyanColor} strokeWidth={2} dot={false} name="Referral" />
             </LineChart>
           </ResponsiveContainer>
         </Card>

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, Upload, Loader2, Download, FileUp, Wand2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Upload, Loader2, Download, FileUp, Wand2, CheckSquare, Square, Trash } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
@@ -52,6 +52,8 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
   const [submitting, setSubmitting] = useState(false);
   const [selectOptions, setSelectOptions] = useState<Record<string, any[]>>({});
   const [aiGenerating, setAiGenerating] = useState<Record<string, boolean>>({});
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (initialData) return;
@@ -413,11 +415,33 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
           className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-sm focus:outline-none focus:ring-2 focus:ring-navy-500" />
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-navy-100 dark:bg-navy-700/50 rounded-xl">
+          <span className="text-sm font-medium text-navy-700 dark:text-navy-200">{selectedIds.size} selected</span>
+          <button onClick={() => { setBulkDeleting(true); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+            <Trash className="w-3.5 h-3.5" /> Delete Selected
+          </button>
+          <button onClick={() => setSelectedIds(new Set())}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-navy-200 dark:border-navy-600 hover:bg-navy-50 dark:hover:bg-navy-800 transition-colors">
+            Clear Selection
+          </button>
+        </div>
+      )}
+
       <div className="bg-white dark:bg-navy-800 rounded-2xl border border-navy-100 dark:border-navy-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-navy-100 dark:border-navy-700 bg-navy-50 dark:bg-navy-800/50">
+                <th className="py-3 px-4 w-10">
+                  <button onClick={() => {
+                    if (selectedIds.size === filtered.length) { setSelectedIds(new Set()); }
+                    else { setSelectedIds(new Set(filtered.map((r: any) => r.id).filter(Boolean))); }
+                  }} className="p-0.5 rounded hover:bg-navy-200 dark:hover:bg-navy-600 transition-colors">
+                    {selectedIds.size === filtered.length && filtered.length > 0 ? <CheckSquare className="w-4 h-4 text-navy-500" /> : <Square className="w-4 h-4 text-navy-400" />}
+                  </button>
+                </th>
                 {columns.map((col) => (
                   <th key={col.key} className="text-left py-3 px-4 font-medium text-navy-400">{col.label}</th>
                 ))}
@@ -426,12 +450,21 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={columns.length + 1} className="py-12 text-center text-navy-400">
+                <tr><td colSpan={columns.length + 2} className="py-12 text-center text-navy-400">
                   <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                 </td></tr>
               ) : filtered.map((row, i) => (
                 <motion.tr key={row.id || i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
-                  className="border-b border-navy-50 dark:border-navy-800 hover:bg-navy-50 dark:hover:bg-navy-800/50 transition-colors">
+                  className={`border-b border-navy-50 dark:border-navy-800 hover:bg-navy-50 dark:hover:bg-navy-800/50 transition-colors ${selectedIds.has(row.id) ? 'bg-navy-50 dark:bg-navy-700/30' : ''}`}>
+                  <td className="py-3 px-4">
+                    <button onClick={() => {
+                      const next = new Set(selectedIds);
+                      if (next.has(row.id)) next.delete(row.id); else next.add(row.id);
+                      setSelectedIds(next);
+                    }} className="p-0.5 rounded hover:bg-navy-200 dark:hover:bg-navy-600 transition-colors">
+                      {selectedIds.has(row.id) ? <CheckSquare className="w-4 h-4 text-navy-500" /> : <Square className="w-4 h-4 text-navy-400" />}
+                    </button>
+                  </td>
                   {columns.map((col) => (
                     <td key={col.key} className="py-3 px-4">
                       {col.render ? col.render(row[col.key], row) : row[col.key] || '—'}
@@ -450,7 +483,7 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
                 </motion.tr>
               ))}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={columns.length + 1} className="py-12 text-center text-navy-400">{t('common.noResults')}</td></tr>
+                <tr><td colSpan={columns.length + 2} className="py-12 text-center text-navy-400">{t('common.noResults')}</td></tr>
               )}
             </tbody>
           </table>
@@ -474,6 +507,28 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
           <button onClick={confirmDelete}
             className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors text-sm font-medium">
             Delete
+          </button>
+        </div>
+      </Modal>
+
+      <Modal open={bulkDeleting} onClose={() => setBulkDeleting(false)} title={`Delete ${selectedIds.size} items?`} size="sm">
+        <p className="text-navy-600 dark:text-navy-300 text-sm mb-6">Are you sure you want to delete {selectedIds.size} items? This action cannot be undone.</p>
+        <div className="flex gap-3">
+          <button onClick={() => setBulkDeleting(false)}
+            className="flex-1 px-4 py-2.5 rounded-xl border border-navy-200 dark:border-navy-600 text-navy-700 dark:text-white hover:bg-navy-50 dark:hover:bg-navy-800 transition-colors text-sm font-medium">
+            Cancel
+          </button>
+          <button onClick={async () => {
+            for (const id of selectedIds) {
+              try { await callApi('delete', { id }); } catch { /* skip failed */ }
+            }
+            toast.success(`Deleted ${selectedIds.size} items`);
+            setSelectedIds(new Set());
+            setBulkDeleting(false);
+            if (!initialData) fetchData();
+            else setTimeout(() => window.location.reload(), 500);
+          }} className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors text-sm font-medium">
+            Delete All
           </button>
         </div>
       </Modal>

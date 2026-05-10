@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import { Plus, Download, TrendingUp, TrendingDown, DollarSign, FileText, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
+import { useAppStore } from '@/store/app-store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
@@ -17,6 +18,8 @@ import { toast } from 'sonner';
 
 export default function AccountingPage() {
   const { t } = useTranslation();
+  const theme = useAppStore((s) => s.theme);
+  const isDark = theme === 'dark';
   const [showInvoice, setShowInvoice] = useState(false);
   const [showTransaction, setShowTransaction] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -146,10 +149,10 @@ export default function AccountingPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: t('accounting.totalRevenue'), value: totalRevenue, icon: TrendingUp, color: 'text-green-600' },
-          { label: t('accounting.totalExpenses'), value: totalExpenses, icon: TrendingDown, color: 'text-red-600' },
-          { label: t('accounting.netProfit'), value: totalRevenue - totalExpenses, icon: DollarSign, color: 'text-blue-600' },
-          { label: t('accounting.pendingInvoices'), value: pendingInvoices, icon: FileText, color: 'text-orange-600' },
+          { label: t('accounting.totalRevenue'), value: totalRevenue, icon: TrendingUp, color: 'text-green-600 dark:text-green-400' },
+          { label: t('accounting.totalExpenses'), value: totalExpenses, icon: TrendingDown, color: 'text-red-600 dark:text-red-400' },
+          { label: t('accounting.netProfit'), value: totalRevenue - totalExpenses, icon: DollarSign, color: 'text-blue-600 dark:text-blue-400' },
+          { label: t('accounting.pendingInvoices'), value: pendingInvoices, icon: FileText, color: 'text-orange-600 dark:text-orange-400' },
         ].map((stat, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
             <Card className="p-5">
@@ -169,17 +172,17 @@ export default function AccountingPage() {
           <AreaChart data={monthlyData}>
             <defs>
               <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#1a2f5e" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#1a2f5e" stopOpacity={0} />
+                <stop offset="5%" stopColor={isDark ? '#d4a61e' : '#1a2f5e'} stopOpacity={isDark ? 0.2 : 0.3} />
+                <stop offset="95%" stopColor={isDark ? '#d4a61e' : '#1a2f5e'} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:opacity-20" />
+            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e5e7eb'} />
             <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
             <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
             <Tooltip content={<CustomTooltip />} />
-            <Area type="monotone" dataKey="revenue" stroke="#1a2f5e" fill="url(#profitGrad)" strokeWidth={2} name="Revenue" />
-            <Area type="monotone" dataKey="expenses" stroke="#d4a61e" fill="url(#profitGrad)" strokeWidth={2} name="Expenses" />
-            <Area type="monotone" dataKey="profit" stroke="#00b8d4" fill="url(#profitGrad)" strokeWidth={2} name="Profit" />
+            <Area type="monotone" dataKey="revenue" stroke={isDark ? '#d4a61e' : '#1a2f5e'} fill="url(#profitGrad)" strokeWidth={2} name="Revenue" />
+            <Area type="monotone" dataKey="expenses" stroke={isDark ? '#f97316' : '#d4a61e'} fill="url(#profitGrad)" strokeWidth={2} name="Expenses" />
+            <Area type="monotone" dataKey="profit" stroke={isDark ? '#22d3ee' : '#00b8d4'} fill="url(#profitGrad)" strokeWidth={2} name="Profit" />
           </AreaChart>
         </ResponsiveContainer>
       </Card>

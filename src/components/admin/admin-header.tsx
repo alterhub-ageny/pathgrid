@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Menu, LogOut, Bell, X, Check, AlertCircle, Info, Loader2 } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { LanguageSwitcher } from '@/components/layout/language-switcher';
+import { QuickSearch } from '@/components/admin/quick-search';
 
 const icons: Record<string, any> = {
   info: Info,
@@ -40,6 +41,8 @@ export function AdminHeader() {
   const { data: session } = useSession();
   const { toggleSidebar } = useAppStore();
   const router = useRouter();
+  const pathname = usePathname();
+  const locale = pathname?.match(/^\/(en|fr|ar)/)?.[1] || 'en';
   const [notifOpen, setNotifOpen] = useState(false);
   const [list, setList] = useState<any[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
@@ -100,6 +103,10 @@ export function AdminHeader() {
         >
           <Menu className="w-5 h-5" />
         </button>
+
+        <div className="hidden sm:block flex-1 max-w-md mx-4">
+          <QuickSearch locale={locale} />
+        </div>
 
         <div className="flex items-center gap-3">
           <ThemeToggle />

@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
+import { sendInvoiceNotification, sendNewLeadNotification } from '@/lib/email';
+import { logActivity } from '@/lib/activity';
 
 const models: Record<string, any> = {
   services: prisma.service,
@@ -19,6 +21,7 @@ const models: Record<string, any> = {
   settings: prisma.siteSetting,
   notifications: prisma.notification,
   notes: prisma.note,
+  activities: prisma.activity,
 };
 
 export async function GET(request: Request) {
@@ -49,6 +52,7 @@ export async function POST(request: Request) {
     if (!model) return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
 
     let result;
+    const userId = (session.user as any)?.id || 'system';
     if (action === 'create') {
       // Hash password for user creation
       if (type === 'clients' && data.password) {
@@ -56,14 +60,31 @@ export async function POST(request: Request) {
         delete data.password;
       }
       result = await model.create({ data });
+      logActivity(userId, 'create', `Created ${type.slice(0, -1)}: ${result.title || result.name || result.number || result.id}`, result.id, type);
+
+      // Email notifications
+      if (type === 'invoices' && result.clientId) {
+        const client = await prisma.user.findUnique({ where: { id: result.clientId } });
+        if (client?.email) {
+          sendInvoiceNotification(client.email, result.number, String(result.amount), result.status);
+        }
+      }
+      if (type === 'leads') {
+        const admins = await prisma.user.findMany({ where: { role: { in: ['admin', 'staff'] } } });
+        for (const admin of admins) {
+          if (admin.email) sendNewLeadNotification(admin.email, result.name, result.email);
+        }
+      }
     } else if (action === 'update') {
       const { id, password, ...updateData } = data;
       if (type === 'clients' && password) {
         updateData.passwordHash = await bcrypt.hash(password, 12);
       }
       result = await model.update({ where: { id }, data: updateData });
+      logActivity(userId, 'update', `Updated ${type.slice(0, -1)}: ${result.title || result.name || result.number || result.id}`, result.id, type);
     } else if (action === 'delete') {
       result = await model.delete({ where: { id: data.id } });
+      logActivity(userId, 'delete', `Deleted ${type.slice(0, -1)}: ${data.id}`, data.id, type);
     } else {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }

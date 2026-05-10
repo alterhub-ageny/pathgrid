@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { DashboardCharts } from '@/components/charts/dashboard-charts';
 import { AISummary } from '@/components/dashboard/ai-summary';
 import { TaskManager } from '@/components/dashboard/task-manager';
+import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { formatCurrency } from '@/lib/utils';
 
 export default function AdminDashboardPage() {
@@ -67,9 +68,10 @@ export default function AdminDashboardPage() {
 
       <DashboardCharts />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <AISummary />
         <TaskManager />
+        <RecentActivity />
       </div>
     </div>
   );

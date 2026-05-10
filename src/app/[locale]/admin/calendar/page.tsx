@@ -105,9 +105,9 @@ export default function AdminCalendarPage() {
                 <p className="text-xs text-navy-400">{new Date(event.start).toLocaleDateString()} · {event.type}</p>
               </div>
               <span className={`text-xs px-2 py-1 rounded-full ${
-                event.type === 'meeting' ? 'bg-purple-100 text-purple-700' :
-                event.type === 'internal' ? 'bg-blue-100 text-blue-700' :
-                'bg-orange-100 text-orange-700'
+                event.type === 'meeting' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
+                event.type === 'internal' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
+                'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
               }`}>{event.type}</span>
             </motion.div>
           ))}
