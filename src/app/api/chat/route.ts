@@ -26,19 +26,29 @@ You can help with:
 
 Be friendly, professional, and concise. Use markdown for formatting when helpful. If you don't know something, be honest about it. Keep responses under 300 words unless asked for detail.`;
 
-const FALLBACK = `Hello! I'm PathgridAI. I can help you with questions about the Pathgrid Agency platform, digital agency services, project management, and more. To enable full AI capabilities, please configure an AI_API_KEY in your environment variables.
+const FALLBACK = 'Hi! I\'m PathgridAI. How can I help you today? Feel free to ask about our services, team, or anything related to Pathgrid Agency — or just say hello!';
 
-For now, here are some things I can tell you about:
-- **Platform Features**: Admin Dashboard, Client Portal, CRM, Accounting, Blog
-- **Services**: UI/UX Design, Web Development, Digital Strategy, Branding
-- **Tech Stack**: Next.js, TypeScript, Tailwind CSS, PostgreSQL
+const SUMMARY_FALLBACK = '• Dashboard overview ready\n• Check Pipeline for lead status\n• Review Invoices for pending payments\n• Team is active on current projects';
 
-What would you like to know?`;
+async function getChatHistory(sessionId: string) {
+  try {
+    return await prisma.chatMessage.findMany({
+      where: { sessionId },
+      orderBy: { createdAt: 'asc' },
+      take: 20,
+    });
+  } catch {
+    return [];
+  }
+}
 
-const SUMMARY_FALLBACK = `• Dashboard overview ready
-• Check Pipeline for lead status
-• Review Invoices for pending payments
-• Team is active on current projects`;
+async function saveChatMessages(sessionId: string, messages: { role: string; content: string }[]) {
+  try {
+    await prisma.chatMessage.createMany({ data: messages.map(m => ({ sessionId, ...m })) });
+  } catch {
+    // DB unavailable — silently skip
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -48,82 +58,52 @@ export async function POST(request: Request) {
 
     const chatSessionId = sessionId || `session_${Date.now()}`;
 
-    // Dashboard summary special case — returns summary-like fallback when no AI key
-    if (chatSessionId === 'dashboard-summary' && !AI_API_KEY) {
-      return NextResponse.json({ reply: SUMMARY_FALLBACK, sessionId: chatSessionId });
+    // Dashboard summary special case
+    if (chatSessionId === 'dashboard-summary') {
+      if (!AI_API_KEY) return NextResponse.json({ reply: SUMMARY_FALLBACK, sessionId: chatSessionId });
     }
 
     if (AI_API_KEY) {
-      let messages = [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: message },
-      ];
+      try {
+        const recent = session ? await getChatHistory(chatSessionId) : [];
 
-      if (session) {
-        const recent = await prisma.chatMessage.findMany({
-          where: { sessionId: chatSessionId },
-          orderBy: { createdAt: 'asc' },
-          take: 20,
+        const messages = [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...recent.map((m: any) => ({ role: m.role, content: m.content })),
+          { role: 'user', content: message },
+        ];
+
+        const res = await fetch(AI_API_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${AI_API_KEY}`,
+          },
+          body: JSON.stringify({ model: AI_MODEL, messages, max_tokens: 500 }),
         });
-        if (recent.length > 0) {
-          messages = [
-            { role: 'system', content: SYSTEM_PROMPT },
-            ...recent.map((m: any) => ({ role: m.role, content: m.content })),
+
+        if (res.ok) {
+          const data = await res.json();
+          const reply = data.choices?.[0]?.message?.content || 'No response';
+          if (session) await saveChatMessages(chatSessionId, [
             { role: 'user', content: message },
-          ];
+            { role: 'assistant', content: reply },
+          ]);
+          return NextResponse.json({ reply, sessionId: chatSessionId });
         }
+      } catch {
+        // AI or DB failed — fall through to fallback below
       }
-
-      const res = await fetch(AI_API_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AI_API_KEY}`,
-        },
-        body: JSON.stringify({ model: AI_MODEL, messages, max_tokens: 500 }),
-      });
-
-      if (!res.ok) {
-        // AI call failed — fall back to local response instead of returning an error
-        const reply = FALLBACK;
-        if (session) {
-          await prisma.chatMessage.createMany({
-            data: [
-              { sessionId: chatSessionId, role: 'user', content: message },
-              { sessionId: chatSessionId, role: 'assistant', content: reply },
-            ],
-          });
-        }
-        return NextResponse.json({ reply, sessionId: chatSessionId });
-      }
-
-      const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content || 'No response';
-
-      if (session) {
-        await prisma.chatMessage.createMany({
-          data: [
-            { sessionId: chatSessionId, role: 'user', content: message },
-            { sessionId: chatSessionId, role: 'assistant', content: reply },
-          ],
-        });
-      }
-
-      return NextResponse.json({ reply, sessionId: chatSessionId });
     }
 
-    // No AI key — return fallback (only save to DB if authenticated)
-    if (session) {
-      await prisma.chatMessage.createMany({
-        data: [
-          { sessionId: chatSessionId, role: 'user', content: message },
-          { sessionId: chatSessionId, role: 'assistant', content: FALLBACK },
-        ],
-      });
-    }
+    // Fallback response
+    if (session) await saveChatMessages(chatSessionId, [
+      { role: 'user', content: message },
+      { role: 'assistant', content: FALLBACK },
+    ]);
 
     return NextResponse.json({ reply: FALLBACK, sessionId: chatSessionId });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Chat failed' }, { status: 500 });
+  } catch {
+    return NextResponse.json({ reply: FALLBACK });
   }
 }
