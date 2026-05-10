@@ -9,6 +9,7 @@ import { usePathname } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { ChatBot } from '@/components/admin/chat-bot';
+import { CookieConsent } from '@/components/layout/cookie-consent';
 import { useAppStore } from '@/store/app-store';
 import { localeDirections } from '@/lib/i18n';
 import type { Locale } from '@/types';
@@ -58,6 +59,7 @@ export default function LocaleLayout({ children }: { children: React.ReactNode }
           <main className="min-h-screen">{children}</main>
           {!isAdmin && !isClientPortal && !isAuth && <Footer />}
           {showChat && <ChatBot />}
+          <CookieConsent />
         </body>
       </html>
     </SessionProvider>

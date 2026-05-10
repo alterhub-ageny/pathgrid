@@ -22,6 +22,7 @@ const models: Record<string, any> = {
   notifications: prisma.notification,
   notes: prisma.note,
   activities: prisma.activity,
+  projects: prisma.project,
 };
 
 export async function GET(request: Request) {

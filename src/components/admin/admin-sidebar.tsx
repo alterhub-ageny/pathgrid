@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Briefcase, Image, FileText, Users, MessageSquare,
   DollarSign, TrendingUp, Calendar, UserCog, Settings, X, ChevronLeft,
-  Target, BarChart3, StickyNote
+  Target, BarChart3, StickyNote, FolderKanban, Shield
 } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
 import { useTranslation } from '@/hooks/use-translation';
@@ -24,9 +24,12 @@ const navItems = [
   { label: 'admin.pipeline', href: '/admin/pipeline', icon: Target, roles: ['admin', 'staff'] },
   { label: 'admin.accounting', href: '/admin/accounting', icon: BarChart3, roles: ['admin'] },
   { label: 'admin.invoices', href: '/admin/invoices', icon: DollarSign, roles: ['admin', 'staff'] },
+  { label: 'admin.projects', href: '/admin/projects', icon: FolderKanban, roles: ['admin', 'staff'] },
   { label: 'admin.calendar', href: '/admin/calendar', icon: Calendar, roles: ['admin', 'staff'] },
+  { label: 'admin.media', href: '/admin/media', icon: Image, roles: ['admin', 'staff'] },
   { label: 'admin.staff', href: '/admin/staff', icon: UserCog, roles: ['admin'] },
   { label: 'admin.notes', href: '/admin/notes', icon: StickyNote, roles: ['admin', 'staff'] },
+  { label: 'admin.security', href: '/admin/security', icon: Shield, roles: ['admin'] },
   { label: 'admin.settings', href: '/admin/settings', icon: Settings, roles: ['admin'] },
 ];
 

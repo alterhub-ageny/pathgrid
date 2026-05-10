@@ -19,6 +19,8 @@ model User {
   phone         String?
   company       String?
   locale        String    @default("en")
+  twoFactorSecret String?
+  twoFactorEnabled Boolean @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
@@ -149,19 +151,20 @@ model PortfolioTranslation {
 }
 
 model BlogPost {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   title     String
-  slug      String   @unique
+  slug      String    @unique
   excerpt   String?
   content   String?
   image     String?
   category  String?
   tags      String?
   author    String?
-  published Boolean  @default(false)
-  featured  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  published Boolean   @default(false)
+  featured  Boolean   @default(false)
+  publishAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   translations BlogTranslation[]
 }
 

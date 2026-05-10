@@ -21,7 +21,12 @@ export default function AdminBlogPage() {
         {
           key: 'published',
           label: t('admin.fields.status'),
-          render: (v) => <Badge variant={v ? 'success' : 'warning'}>{v ? t('admin.published') : t('admin.draft')}</Badge>,
+          render: (v, row) => {
+            if (!v) return <Badge variant="warning">{t('admin.draft')}</Badge>;
+            const pubAt = row.publishAt ? new Date(row.publishAt) : null;
+            if (pubAt && pubAt > new Date()) return <Badge variant="warning">{t('admin.scheduled')}</Badge>;
+            return <Badge variant="success">{t('admin.published')}</Badge>;
+          },
         },
         {
           key: 'featured',
@@ -38,6 +43,7 @@ export default function AdminBlogPage() {
         { key: 'category', label: t('admin.fields.category'), type: 'select', options: categories },
         { key: 'tags', label: t('admin.fields.tags') },
         { key: 'author', label: t('admin.fields.author') },
+        { key: 'publishAt', label: t('admin.fields.schedulePublish'), type: 'datetime-local' },
         { key: 'published', label: t('admin.fields.published'), type: 'checkbox' },
         { key: 'featured', label: t('admin.fields.featured'), type: 'checkbox' },
       ]}

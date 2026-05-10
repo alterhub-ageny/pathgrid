@@ -160,6 +160,9 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
         item[f.key] = imagePreviews[f.key] || modal.edit?.[f.key] || '';
       } else if (f.type === 'richtext') {
         item[f.key] = richtextValues[f.key] || '';
+      } else if (f.type === 'datetime-local') {
+        const val = formData.get(f.key) as string;
+        item[f.key] = val ? new Date(val).toISOString() : null;
       } else {
         item[f.key] = formData.get(f.key) || '';
       }
@@ -360,6 +363,13 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
             placeholder={field.label}
           />
         </div>
+      );
+    }
+
+    if (field.type === 'datetime-local') {
+      const dtValue = currentValue ? new Date(currentValue).toISOString().slice(0, 16) : '';
+      return (
+        <Input key={field.key} name={field.key} label={field.label} type="datetime-local" defaultValue={dtValue} />
       );
     }
 

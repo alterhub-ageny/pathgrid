@@ -17,5 +17,20 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Pathgrid Agency',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://pathgrid.agency',
+    description: 'A full-service digital agency specializing in strategy, design, and technology.',
+    sameAs: ['https://linkedin.com/company/pathgrid', 'https://twitter.com/pathgrid'],
+    contactPoint: { '@type': 'ContactPoint', telephone: '+1-555-0123', contactType: 'sales' },
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {children}
+    </>
+  );
 }

@@ -365,6 +365,7 @@ export function KanbanBoard({ editId }: { editId?: string }) {
                 <p className="text-sm">{detailModal.lead.phone}</p>
               </div>
             )}
+            <AIScoreInfo leadId={detailModal.lead.id} />
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setEditingLead(detailModal)}>
                 <Edit2 className="w-4 h-4 mr-1" /> Edit
@@ -427,6 +428,51 @@ export function KanbanBoard({ editId }: { editId?: string }) {
           </div>
         </div>
       </Modal>
+    </div>
+  );
+}
+
+function AIScoreInfo({ leadId }: { leadId: string }) {
+  const [data, setData] = useState<{ score: number; recommendation: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchScore = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/lead-score?id=${leadId}`);
+      const json = await res.json();
+      if (json.score !== undefined) setData(json);
+    } catch { /* silent */ }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchScore(); }, [leadId]);
+
+  if (!data && !loading) return null;
+
+  return (
+    <div className="p-3 rounded-xl bg-navy-50 dark:bg-navy-800/50 border border-navy-100 dark:border-navy-700">
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-xs text-navy-400 font-medium">AI Score</p>
+        <button onClick={fetchScore} disabled={loading}
+          className="text-[10px] text-navy-400 hover:text-navy-600 dark:hover:text-navy-200 disabled:opacity-50">
+          {loading ? '...' : 'Recalculate'}
+        </button>
+      </div>
+      {data ? (
+        <>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="flex-1 h-1.5 bg-navy-200 dark:bg-navy-700 rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${data.score}%`, backgroundColor: data.score >= 80 ? '#22c55e' : data.score >= 50 ? '#eab308' : '#ef4444' }} />
+            </div>
+            <span className="text-sm font-bold">{data.score}</span>
+          </div>
+          <p className="text-xs text-navy-500 dark:text-navy-400">{data.recommendation}</p>
+        </>
+      ) : (
+        <p className="text-xs text-navy-400">Calculating...</p>
+      )}
     </div>
   );
 }
