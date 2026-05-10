@@ -1,14 +1,57 @@
 import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
     const { name, email, company, subject, message } = await request.json();
 
-    // In production, send email via SendGrid/Nodemailer
-    console.log('Contact form submission:', { name, email, company, subject, message });
+    if (!name || !email || !message) {
+      return NextResponse.json({ success: false, message: 'Name, email, and message are required' }, { status: 400 });
+    }
 
-    // Store in database or send email
-    // await sendEmail({ to: 'hello@pathgrid.agency', subject: `Contact: ${subject}`, body: `From: ${name} (${email})\n\n${message}` });
+    // Find or create a client user for this visitor
+    let client = await prisma.user.findUnique({ where: { email } }).catch(() => null);
+    if (!client) {
+      client = await prisma.user.create({
+        data: { name, email, role: 'client' },
+      }).catch(() => null);
+    }
+
+    if (!client) {
+      return NextResponse.json({ success: false, message: 'Could not process contact form' }, { status: 500 });
+    }
+
+    // Create a conversation and message
+    const conversation = await prisma.conversation.create({
+      data: {
+        subject: subject || `Contact Form: ${name}`,
+        clientId: client.id,
+      },
+    });
+
+    const msgBody = `From: ${name} (${email})${company ? `\nCompany: ${company}` : ''}${subject ? `\nSubject: ${subject}` : ''}\n\n${message}`;
+
+    await prisma.message.create({
+      data: {
+        content: msgBody,
+        senderId: client.id,
+        conversationId: conversation.id,
+      },
+    });
+
+    // Notify all admins and staff
+    const admins = await prisma.user.findMany({ where: { role: { in: ['admin', 'staff'] } } });
+    for (const admin of admins) {
+      await prisma.notification.create({
+        data: {
+          userId: admin.id,
+          type: 'info',
+          title: 'New contact form message',
+          message: `${name} sent a message: ${subject || 'No subject'}`,
+          link: `/en/admin/messages`,
+        },
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ success: true, message: 'Message received' });
   } catch (error) {

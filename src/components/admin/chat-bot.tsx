@@ -9,23 +9,22 @@ import {
   Zap, Headphones, ChevronRight, CheckCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
+import { useAppStore } from '@/store/app-store';
 
 export function ChatBot() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const locale = pathname?.match(/^\/(en|fr|ar)/)?.[1] || 'en';
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: 'Hi! I\'m PathgridAI. How can I help you today?' },
-  ]);
+  const open = useAppStore((s) => s.chatOpen);
+  const messages = useAppStore((s) => s.chatMessages);
+  const sessionId = useAppStore((s) => s.chatSessionId);
+  const setChatOpen = useAppStore((s) => s.setChatOpen);
+  const addChatMessage = useAppStore((s) => s.addChatMessage);
+  const setChatMessages = useAppStore((s) => s.setChatMessages);
+  const setChatSessionId = useAppStore((s) => s.setChatSessionId);
+  const resetChat = useAppStore((s) => s.resetChat);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [showHandoff, setShowHandoff] = useState(false);
@@ -52,7 +51,7 @@ export function ChatBot() {
     if (!text || loading) return;
 
     setInput('');
-    setMessages((prev) => [...prev, { role: 'user', content: text }]);
+    addChatMessage({ role: 'user', content: text });
     setLoading(true);
 
     try {
@@ -63,15 +62,15 @@ export function ChatBot() {
       });
       const json = await res.json();
       if (res.status === 401) {
-        setMessages((prev) => [...prev, { role: 'assistant', content: 'Please log in to use the chat.' }]);
+        addChatMessage({ role: 'assistant', content: 'Please log in to use the chat.' });
       } else if (json.reply) {
-        setMessages((prev) => [...prev, { role: 'assistant', content: json.reply }]);
-        if (json.sessionId) setSessionId(json.sessionId);
+        addChatMessage({ role: 'assistant', content: json.reply });
+        if (json.sessionId) setChatSessionId(json.sessionId);
       } else {
-        setMessages((prev) => [...prev, { role: 'assistant', content: 'Sorry, I couldn\'t process that.' }]);
+        addChatMessage({ role: 'assistant', content: 'Sorry, I couldn\'t process that.' });
       }
     } catch {
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'Network error. Please try again.' }]);
+      addChatMessage({ role: 'assistant', content: 'Network error. Please try again.' });
     } finally {
       setLoading(false);
     }
@@ -107,7 +106,7 @@ export function ChatBot() {
       });
       const json = await res.json();
       if (res.ok && json.reply) {
-        setMessages((prev) => [...prev, { role: 'assistant', content: json.reply }]);
+        addChatMessage({ role: 'assistant', content: json.reply });
         setHandoffDone(true);
         setShowHandoff(false);
         toast.success('Request sent! We\'ll be in touch.');
@@ -132,7 +131,7 @@ export function ChatBot() {
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => setChatOpen(true)}
         title="Open PathgridAI Chat"
         className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-navy-600 to-navy-800 dark:from-gold-400 dark:to-gold-600 text-white dark:text-navy-900 shadow-[0_0_20px_rgba(74,103,175,0.3)] dark:shadow-[0_0_20px_rgba(212,166,30,0.3)] hover:shadow-[0_0_30px_rgba(74,103,175,0.5)] dark:hover:shadow-[0_0_30px_rgba(212,166,30,0.5)] hover:scale-105 transition-all duration-300 flex items-center justify-center group"
       >
@@ -191,7 +190,7 @@ export function ChatBot() {
                     >
                       <Headphones className="w-4 h-4 text-navy-400 group-hover:text-gold-500 transition-colors" />
                     </button>
-                    <button onClick={() => { setOpen(false); setShowHandoff(false); setHandoffDone(false); }} className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 transition-colors">
+                    <button onClick={() => { setChatOpen(false); setShowHandoff(false); setHandoffDone(false); }} className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 transition-colors">
                       <X className="w-4 h-4 text-navy-400" />
                     </button>
                   </div>
