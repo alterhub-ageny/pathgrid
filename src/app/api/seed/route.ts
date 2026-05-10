@@ -4,6 +4,10 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+export async function GET() {
+  return POST();
+}
+
 export async function POST() {
   try {
     const adminHash = await bcrypt.hash('admin123', 12);
