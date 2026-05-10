@@ -27,7 +27,7 @@ export default function AboutPage() {
             {[
               { icon: Target, title: t('about.mission'), text: t('about.missionText') },
               { icon: Eye, title: t('about.vision'), text: t('about.visionText') },
-              { icon: Users, title: t('about.culture'), text: 'Collaborative, innovative, and relentlessly focused on delivering excellence.' },
+              { icon: Users, title: t('about.culture'), text: t('about.cultureText') },
             ].map((item, i) => (
               <Card key={i} delay={i * 0.1}>
                 <item.icon className="w-8 h-8 text-gold-500 mb-4" />

@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
+import { useAppStore } from '@/store/app-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 export default function ContactPage() {
   const { t, locale } = useTranslation();
+  const siteSettings = useAppStore((s) => s.siteSettings);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -98,7 +100,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">{t('contact.email')}</h3>
-                  <p className="text-navy-500 dark:text-navy-300">hello@pathgrid.agency</p>
+                  <p className="text-navy-500 dark:text-navy-300">{siteSettings.email || 'hello@pathgrid.agency'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
@@ -107,7 +109,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">{t('contact.phone')}</h3>
-                  <p className="text-navy-500 dark:text-navy-300">+1 (555) 123-4567</p>
+                  <p className="text-navy-500 dark:text-navy-300">{siteSettings.phone || '+1 (555) 123-4567'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
@@ -116,7 +118,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">{t('contact.address')}</h3>
-                  <p className="text-navy-500 dark:text-navy-300">San Francisco, CA 94105</p>
+                  <p className="text-navy-500 dark:text-navy-300">{siteSettings.address || 'San Francisco, CA'}</p>
                 </div>
               </div>
             </motion.div>

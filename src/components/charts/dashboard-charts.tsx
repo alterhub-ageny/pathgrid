@@ -3,53 +3,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend, PieChart, Pie, Cell, LineChart, Line
+  ResponsiveContainer, Legend, PieChart, Pie, Cell
 } from 'recharts';
 import { motion } from 'framer-motion';
-import { Download, Calendar } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/use-translation';
 import { useAppStore } from '@/store/app-store';
 import { formatCurrency } from '@/lib/utils';
 
-const revenueData = [
-  { month: 'Jan', revenue: 45000, expenses: 28000 },
-  { month: 'Feb', revenue: 52000, expenses: 31000 },
-  { month: 'Mar', revenue: 48000, expenses: 27000 },
-  { month: 'Apr', revenue: 61000, expenses: 33000 },
-  { month: 'May', revenue: 58000, expenses: 29000 },
-  { month: 'Jun', revenue: 72000, expenses: 35000 },
-  { month: 'Jul', revenue: 68000, expenses: 32000 },
-  { month: 'Aug', revenue: 75000, expenses: 38000 },
-  { month: 'Sep', revenue: 82000, expenses: 36000 },
-  { month: 'Oct', revenue: 78000, expenses: 34000 },
-  { month: 'Nov', revenue: 85000, expenses: 39000 },
-  { month: 'Dec', revenue: 95000, expenses: 42000 },
-];
+const CATEGORY_COLORS = ['#3b82f6', '#eab308', '#a855f7', '#f97316', '#22c55e', '#ef4444', '#06b6d4', '#ec4899', '#14b8a6', '#f43f5e'];
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 type PipelineDataItem = { stage: string; count: number; value: number; color: string };
 
 const DEFAULT_PIPELINE_COLORS = ['#3b82f6', '#eab308', '#a855f7', '#f97316', '#22c55e', '#ef4444'];
-
-const trafficData = [
-  { month: 'Jan', organic: 4200, paid: 1800, referral: 1200 },
-  { month: 'Feb', organic: 4800, paid: 2000, referral: 1400 },
-  { month: 'Mar', organic: 5100, paid: 2200, referral: 1600 },
-  { month: 'Apr', organic: 5600, paid: 2400, referral: 1800 },
-  { month: 'May', organic: 6200, paid: 2600, referral: 2000 },
-  { month: 'Jun', organic: 6800, paid: 2800, referral: 2200 },
-];
-
-const expenseByCategory = [
-  { name: 'Salaries', value: 45 },
-  { name: 'Infrastructure', value: 20 },
-  { name: 'Marketing', value: 15 },
-  { name: 'Operations', value: 12 },
-  { name: 'Other', value: 8 },
-];
-
-const COLORS_LIGHT = ['#1a2f5e', '#d4a61e', '#00b8d4', '#4a67af', '#f6d154'];
-const COLORS_DARK = ['#d4a61e', '#60a5fa', '#22d3ee', '#a78bfa', '#fbbf24'];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -72,22 +41,49 @@ export function DashboardCharts() {
   const { t } = useTranslation();
   const theme = useAppStore((s) => s.theme);
   const isDark = theme === 'dark';
-  const COLORS = isDark ? COLORS_DARK : COLORS_LIGHT;
+  const [revenueData, setRevenueData] = useState<{ month: string; revenue: number; expenses: number }[]>([]);
+  const [expenseData, setExpenseData] = useState<{ name: string; value: number }[]>([]);
   const [pipelineData, setPipelineData] = useState<PipelineDataItem[]>([]);
-  const [pipelineLoading, setPipelineLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const fetchPipelineData = useCallback(async () => {
-    setPipelineLoading(true);
+  const fetchCharts = useCallback(async () => {
+    setLoading(true);
     try {
-      const [stagesRes, leadsRes] = await Promise.all([
+      const [txRes, stagesRes, leadsRes] = await Promise.all([
+        fetch('/api/admin/data?type=transactions'),
         fetch('/api/admin/data?type=stages'),
         fetch('/api/admin/data?type=leads'),
       ]);
+      const txJson = await txRes.json();
       const stages = await stagesRes.json();
       const leads = await leadsRes.json();
+      const txs = Array.isArray(txJson) ? txJson : [];
       const stageArr = Array.isArray(stages) ? stages : [];
       const leadsArr = Array.isArray(leads) ? leads : leads.data || [];
 
+      // Revenue vs Expenses by month
+      const monthMap = new Map<string, { revenue: number; expenses: number }>();
+      MONTHS.forEach(m => monthMap.set(m, { revenue: 0, expenses: 0 }));
+      txs.forEach((tx: any) => {
+        if (tx.deletedAt) return;
+        const d = new Date(tx.date);
+        const m = MONTHS[d.getMonth()];
+        const entry = monthMap.get(m)!;
+        if (tx.type === 'income') entry.revenue += tx.amount;
+        else entry.expenses += tx.amount;
+      });
+      setRevenueData(MONTHS.map(m => ({ month: m, ...monthMap.get(m)! })));
+
+      // Expense breakdown by category
+      const catMap = new Map<string, number>();
+      txs.forEach((tx: any) => {
+        if (tx.deletedAt || tx.type !== 'expense') return;
+        const cat = tx.category || 'Other';
+        catMap.set(cat, (catMap.get(cat) || 0) + tx.amount);
+      });
+      setExpenseData(Array.from(catMap.entries()).map(([name, value]) => ({ name, value: Math.round(value) })));
+
+      // Pipeline funnel
       const stageMap = new Map<string, { label: string; color: string }>();
       const stageOrder = new Map<string, number>();
       stageArr.forEach((s: any, i: number) => {
@@ -96,7 +92,6 @@ export function DashboardCharts() {
           stageOrder.set(s.key, s.order ?? i);
         }
       });
-
       const grouped = new Map<string, { count: number; value: number }>();
       leadsArr.forEach((l: any) => {
         const sk = l.stage || 'cold';
@@ -105,29 +100,31 @@ export function DashboardCharts() {
         g.count++;
         g.value += l.value || 0;
       });
-
       const sorted = Array.from(stageOrder.entries()).sort((a, b) => a[1] - b[1]);
-      const data: PipelineDataItem[] = sorted.map(([key]) => {
+      setPipelineData(sorted.map(([key]) => {
         const info = stageMap.get(key)!;
         const g = grouped.get(key) || { count: 0, value: 0 };
         return { stage: info.label, count: g.count, value: g.value, color: info.color };
-      });
-      setPipelineData(data);
+      }));
     } catch {
+      setRevenueData([]);
+      setExpenseData([]);
       setPipelineData([]);
     } finally {
-      setPipelineLoading(false);
+      setLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchPipelineData(); }, [fetchPipelineData]);
+  useEffect(() => { fetchCharts(); }, [fetchCharts]);
+
+  const isEmpty = !loading && revenueData.length === 0 && expenseData.length === 0 && pipelineData.length === 0;
+
   const gridStroke = isDark ? '#334155' : '#e5e7eb';
   const navyColor = isDark ? '#d4a61e' : '#1a2f5e';
   const goldColor = isDark ? '#fbbf24' : '#d4a61e';
-  const cyanColor = '#00b8d4';
 
   const handleExport = (format: 'pdf' | 'csv') => {
-    if (format === 'csv') {
+    if (format === 'csv' && revenueData.length > 0) {
       const headers = 'Month,Revenue,Expenses\n';
       const rows = revenueData.map(d => `${d.month},${d.revenue},${d.expenses}`).join('\n');
       const blob = new Blob([headers + rows], { type: 'text/csv' });
@@ -155,7 +152,13 @@ export function DashboardCharts() {
         </div>
       </div>
 
+      {loading ? (
+        <div className="flex items-center justify-center py-16 text-navy-400 dark:text-navy-200">Loading charts...</div>
+      ) : isEmpty ? (
+        <div className="flex items-center justify-center py-16 text-navy-400 dark:text-navy-200">No transaction data yet</div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {revenueData.length > 0 && (
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Revenue vs Expenses</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -179,14 +182,11 @@ export function DashboardCharts() {
             </AreaChart>
           </ResponsiveContainer>
         </Card>
+        )}
 
+        {pipelineData.length > 0 && (
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Pipeline Funnel</h3>
-          {pipelineLoading ? (
-            <div className="flex items-center justify-center h-[300px] text-navy-400 dark:text-navy-200">Loading...</div>
-          ) : pipelineData.length === 0 ? (
-            <div className="flex items-center justify-center h-[300px] text-navy-400 dark:text-navy-200">No pipeline stages configured</div>
-          ) : (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={pipelineData} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
@@ -200,40 +200,26 @@ export function DashboardCharts() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          )}
         </Card>
+        )}
 
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Web Traffic Sources</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={trafficData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-              <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
-              <YAxis stroke="#9ca3af" fontSize={12} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ color: isDark ? '#cbd5e1' : undefined }} />
-              <Line type="monotone" dataKey="organic" stroke={navyColor} strokeWidth={2} dot={false} name="Organic" />
-              <Line type="monotone" dataKey="paid" stroke={goldColor} strokeWidth={2} dot={false} name="Paid" />
-              <Line type="monotone" dataKey="referral" stroke={cyanColor} strokeWidth={2} dot={false} name="Referral" />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-
+        {expenseData.length > 0 && (
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Expense Breakdown</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={expenseByCategory}
+                data={expenseData}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
                 outerRadius={100}
                 paddingAngle={5}
                 dataKey="value"
+                nameKey="name"
               >
-                {expenseByCategory.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                {expenseData.map((_, i) => (
+                  <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip />
@@ -241,7 +227,9 @@ export function DashboardCharts() {
             </PieChart>
           </ResponsiveContainer>
         </Card>
+        )}
       </div>
+      )}
     </div>
   );
 }
