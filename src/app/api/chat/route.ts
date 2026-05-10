@@ -84,8 +84,17 @@ export async function POST(request: Request) {
       });
 
       if (!res.ok) {
-        const errText = await res.text();
-        return NextResponse.json({ error: 'AI service error', details: errText }, { status: 502 });
+        // AI call failed — fall back to local response instead of returning an error
+        const reply = FALLBACK;
+        if (session) {
+          await prisma.chatMessage.createMany({
+            data: [
+              { sessionId: chatSessionId, role: 'user', content: message },
+              { sessionId: chatSessionId, role: 'assistant', content: reply },
+            ],
+          });
+        }
+        return NextResponse.json({ reply, sessionId: chatSessionId });
       }
 
       const data = await res.json();
