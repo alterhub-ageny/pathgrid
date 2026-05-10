@@ -1,18 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { Menu, LogOut, Bell, X, Check, AlertCircle, Info } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Menu, LogOut, Bell, X, Check, AlertCircle, Info, Loader2 } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { LanguageSwitcher } from '@/components/layout/language-switcher';
-
-const notifications = [
-  { id: '1', type: 'info', text: 'New lead from TechVentures', time: '2 min ago' },
-  { id: '2', type: 'success', text: 'Invoice INV-2025-0042 paid', time: '1 hour ago' },
-  { id: '3', type: 'warning', text: 'Project deadline approaching', time: '3 hours ago' },
-  { id: '4', type: 'alert', text: 'Server backup completed', time: '5 hours ago' },
-];
 
 const icons: Record<string, any> = {
   info: Info,
@@ -28,11 +22,74 @@ const colors: Record<string, string> = {
   alert: 'text-red-500 bg-red-100 dark:bg-red-900/30',
 };
 
+function formatRelativeTime(dateStr: string): string {
+  const now = Date.now();
+  const date = new Date(dateStr).getTime();
+  const diff = now - date;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
 export function AdminHeader() {
   const { data: session } = useSession();
   const { toggleSidebar } = useAppStore();
+  const router = useRouter();
   const [notifOpen, setNotifOpen] = useState(false);
-  const [list, setList] = useState(notifications);
+  const [list, setList] = useState<any[]>([]);
+  const [loadingNotifs, setLoadingNotifs] = useState(false);
+
+  const fetchNotifications = useCallback(async () => {
+    setLoadingNotifs(true);
+    try {
+      const res = await fetch('/api/admin/notifications');
+      const json = await res.json();
+      if (Array.isArray(json)) setList(json);
+    } catch {
+      // silent
+    } finally {
+      setLoadingNotifs(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  const markRead = async (id: string) => {
+    try {
+      await fetch('/api/admin/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark-read', data: { id } }),
+      });
+      setList((prev) => prev.filter((x) => x.id !== id));
+    } catch { /* silent */ }
+  };
+
+  const markAllRead = async () => {
+    try {
+      await fetch('/api/admin/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark-all-read' }),
+      });
+      setList([]);
+    } catch { /* silent */ }
+  };
+
+  const handleNotifClick = (n: any) => {
+    if (n.link) router.push(n.link);
+    markRead(n.id);
+    setNotifOpen(false);
+  };
 
   return (
     <header className="h-16 border-b border-navy-100 dark:border-navy-800 bg-white dark:bg-navy-900">
@@ -59,28 +116,33 @@ export function AdminHeader() {
                   <div className="flex items-center justify-between px-4 py-3 border-b border-navy-100 dark:border-navy-700">
                     <h3 className="text-sm font-semibold">Notifications</h3>
                     {list.length > 0 && (
-                      <button onClick={() => setList([])} className="text-xs text-navy-400 hover:text-navy-600 dark:hover:text-navy-200">
-                        Clear all
+                      <button onClick={markAllRead} className="text-xs text-navy-400 hover:text-navy-600 dark:hover:text-navy-200">
+                        Mark all read
                       </button>
                     )}
                   </div>
                   <div className="max-h-72 overflow-y-auto">
-                    {list.length === 0 ? (
+                    {loadingNotifs && list.length === 0 ? (
+                      <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-navy-400" /></div>
+                    ) : list.length === 0 ? (
                       <p className="text-center text-sm text-navy-400 py-8">No notifications</p>
                     ) : (
                       list.map((n) => {
-                        const Icon = icons[n.type];
+                        const Icon = icons[n.type] || Info;
                         return (
-                          <button key={n.id} onClick={() => setList((prev) => prev.filter((x) => x.id !== n.id))}
+                          <button key={n.id} onClick={() => handleNotifClick(n)}
                             className="w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-navy-50 dark:hover:bg-navy-700/50 transition-colors border-b border-navy-50 dark:border-navy-700/50 last:border-0">
-                            <span className={`p-1.5 rounded-full shrink-0 ${colors[n.type]}`}>
+                            <span className={`p-1.5 rounded-full shrink-0 ${colors[n.type] || colors.info}`}>
                               <Icon className="w-3.5 h-3.5" />
                             </span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-navy-900 dark:text-white">{n.text}</p>
-                              <p className="text-xs text-navy-400 mt-0.5">{n.time}</p>
+                              <p className="text-sm text-navy-900 dark:text-white">{n.title}</p>
+                              {n.message && <p className="text-xs text-navy-400 mt-0.5">{n.message}</p>}
+                              <p className="text-xs text-navy-300 mt-0.5">{formatRelativeTime(n.createdAt)}</p>
                             </div>
-                            <X className="w-3.5 h-3.5 text-navy-300 shrink-0 mt-1" />
+                            <button onClick={(e) => { e.stopPropagation(); markRead(n.id); }} className="shrink-0 mt-1">
+                              <X className="w-3.5 h-3.5 text-navy-300 hover:text-navy-600" />
+                            </button>
                           </button>
                         );
                       })

@@ -9,7 +9,7 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String    @id @default(uuid())
   name          String?
   email         String    @unique
   emailVerified DateTime?
@@ -30,7 +30,7 @@ model User {
 }
 
 model Account {
-  id                String  @id @default(cuid())
+  id                String  @id @default(uuid())
   userId            String
   type              String
   provider          String
@@ -47,7 +47,7 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
@@ -62,7 +62,7 @@ model VerificationToken {
 }
 
 model Service {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   title       String
   slug        String   @unique
   description String
@@ -78,7 +78,7 @@ model Service {
 }
 
 model ServiceTranslation {
-  id          String  @id @default(cuid())
+  id          String  @id @default(uuid())
   serviceId   String
   locale      String
   title       String
@@ -89,7 +89,7 @@ model ServiceTranslation {
 }
 
 model TeamMember {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   name        String
   slug        String   @unique
   role        String
@@ -106,7 +106,7 @@ model TeamMember {
 }
 
 model TeamMemberTranslation {
-  id          String  @id @default(cuid())
+  id          String  @id @default(uuid())
   memberId    String
   locale      String
   role        String
@@ -116,7 +116,7 @@ model TeamMemberTranslation {
 }
 
 model PortfolioItem {
-  id            String   @id @default(cuid())
+  id            String   @id @default(uuid())
   title         String
   slug          String   @unique
   description   String
@@ -138,7 +138,7 @@ model PortfolioItem {
 }
 
 model PortfolioTranslation {
-  id          String  @id @default(cuid())
+  id          String  @id @default(uuid())
   portfolioId String
   locale      String
   title       String
@@ -149,7 +149,7 @@ model PortfolioTranslation {
 }
 
 model BlogPost {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   title     String
   slug      String   @unique
   excerpt   String?
@@ -166,7 +166,7 @@ model BlogPost {
 }
 
 model BlogTranslation {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   postId    String
   locale    String
   title     String
@@ -177,7 +177,7 @@ model BlogTranslation {
 }
 
 model Testimonial {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   name      String
   company   String?
   role      String?
@@ -192,7 +192,7 @@ model Testimonial {
 }
 
 model TestimonialTranslation {
-  id            String  @id @default(cuid())
+  id            String  @id @default(uuid())
   testimonialId String
   locale        String
   content       String
@@ -202,7 +202,7 @@ model TestimonialTranslation {
 }
 
 model Project {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   title       String
   description String?
   status      String   @default("active")
@@ -219,7 +219,7 @@ model Project {
 }
 
 model Invoice {
-  id          String    @id @default(cuid())
+  id          String    @id @default(uuid())
   number      String    @unique
   clientId    String
   amount      Float
@@ -237,7 +237,7 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id        String  @id @default(cuid())
+  id        String  @id @default(uuid())
   invoiceId String
   label     String
   quantity  Float   @default(1)
@@ -247,7 +247,7 @@ model InvoiceItem {
 }
 
 model Transaction {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   invoiceId String?
   label     String
   amount    Float
@@ -259,7 +259,7 @@ model Transaction {
 }
 
 model Message {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   content   String
   senderId  String
   projectId String?
@@ -270,7 +270,7 @@ model Message {
 }
 
 model Asset {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   name      String
   url       String
   type      String   @default("file")
@@ -282,7 +282,7 @@ model Asset {
 }
 
 model Lead {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   name        String
   email       String
   phone       String?
@@ -304,7 +304,7 @@ model Lead {
 }
 
 model LeadInteraction {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   leadId    String
   type      String
   note      String?
@@ -314,7 +314,7 @@ model LeadInteraction {
 }
 
 model LeadTask {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   leadId      String
   title       String
   description String?
@@ -324,7 +324,7 @@ model LeadTask {
 }
 
 model Activity {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   userId    String
   type      String
   description String
@@ -335,13 +335,13 @@ model Activity {
 }
 
 model SiteSetting {
-  id    String @id @default(cuid())
+  id    String @id @default(uuid())
   key   String @unique
   value String
 }
 
 model Task {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   title       String
   description String?
   status      String   @default("pending")
@@ -355,7 +355,7 @@ model Task {
 }
 
 model CalendarEvent {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   title     String
   description String?
   start     DateTime
@@ -366,8 +366,33 @@ model CalendarEvent {
   createdAt DateTime @default(now())
 }
 
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String?
+  type      String   @default("info")
+  title     String
+  message   String?
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  category  String?
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+}
+
 model ChatMessage {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   sessionId String
   role      String
   content   String

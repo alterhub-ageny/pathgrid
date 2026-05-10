@@ -133,6 +133,7 @@
     "accounting": "Comptabilité",
     "calendar": "Calendrier",
     "staff": "Personnel",
+    "notes": "Notes",
     "settings": "Paramètres",
     "quickActions": "Actions rapides",
     "recentActivity": "Activité récente",
@@ -203,6 +204,9 @@
       "manageClients": "Gérer vos clients",
       "manageInvoices": "Gérer les factures",
       "manageStaff": "Gérer le personnel et suivre les heures",
+      "manageNotes": "Gérer vos notes",
+      "pinned": "Épinglé",
+      "content": "Contenu",
       "selectCategory": "Sélectionner une catégorie",
       "chooseImage": "Choisir une image"
     }

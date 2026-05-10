@@ -133,6 +133,7 @@
     "accounting": "Accounting",
     "calendar": "Calendar",
     "staff": "Staff",
+    "notes": "Notes",
     "settings": "Settings",
     "quickActions": "Quick Actions",
     "recentActivity": "Recent Activity",
@@ -203,6 +204,9 @@
       "manageClients": "Manage your clients",
       "manageInvoices": "Manage invoices",
       "manageStaff": "Manage staff and track hours",
+      "manageNotes": "Manage your notes",
+      "pinned": "Pinned",
+      "content": "Content",
       "selectCategory": "Select Category",
       "chooseImage": "Choose Image"
     }

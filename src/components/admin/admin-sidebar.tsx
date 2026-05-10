@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Briefcase, Image, FileText, Users, MessageSquare,
   DollarSign, TrendingUp, Calendar, UserCog, Settings, X, ChevronLeft,
-  Target, BarChart3
+  Target, BarChart3, StickyNote
 } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
 import { useTranslation } from '@/hooks/use-translation';
@@ -26,6 +26,7 @@ const navItems = [
   { label: 'admin.invoices', href: '/admin/invoices', icon: DollarSign, roles: ['admin', 'staff'] },
   { label: 'admin.calendar', href: '/admin/calendar', icon: Calendar, roles: ['admin', 'staff'] },
   { label: 'admin.staff', href: '/admin/staff', icon: UserCog, roles: ['admin'] },
+  { label: 'admin.notes', href: '/admin/notes', icon: StickyNote, roles: ['admin', 'staff'] },
   { label: 'admin.settings', href: '/admin/settings', icon: Settings, roles: ['admin'] },
 ];
 

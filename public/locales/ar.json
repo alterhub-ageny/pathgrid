@@ -133,6 +133,7 @@
     "accounting": "المحاسبة",
     "calendar": "التقويم",
     "staff": "الموظفون",
+    "notes": "الملاحظات",
     "settings": "الإعدادات",
     "quickActions": "إجراءات سريعة",
     "recentActivity": "النشاط الأخير",
@@ -203,6 +204,9 @@
       "manageClients": "إدارة العملاء",
       "manageInvoices": "إدارة الفواتير",
       "manageStaff": "إدارة الموظفين وتتبع الساعات",
+      "manageNotes": "إدارة ملاحظاتك",
+      "pinned": "مثبت",
+      "content": "المحتوى",
       "selectCategory": "اختر التصنيف",
       "chooseImage": "اختر صورة"
     }

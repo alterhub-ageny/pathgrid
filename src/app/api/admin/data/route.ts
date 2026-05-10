@@ -17,6 +17,8 @@ const models: Record<string, any> = {
   'calendar-events': prisma.calendarEvent,
   transactions: prisma.transaction,
   settings: prisma.siteSetting,
+  notifications: prisma.notification,
+  notes: prisma.note,
 };
 
 export async function GET(request: Request) {

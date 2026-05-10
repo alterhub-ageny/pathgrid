@@ -58,7 +58,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <span className="text-xs font-medium text-navy-400">{stat.change}</span>
               </div>
-              <p className="text-2xl font-bold font-serif">{typeof stat.value === 'number' ? formatCurrency(stat.value) : stat.value}</p>
+              <p className="text-2xl font-bold font-serif">{stat.label === 'admin.revenue' ? formatCurrency(stat.value) : stat.value}</p>
               <p className="text-xs text-navy-400 mt-1">{t(stat.label)}</p>
             </Card>
           </motion.div>

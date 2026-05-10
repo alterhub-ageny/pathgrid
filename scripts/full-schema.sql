@@ -366,6 +366,31 @@ CREATE TABLE IF NOT EXISTS "CalendarEvent" (
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS "Notification" (
+    "id" UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    "userId" TEXT,
+    "type" TEXT NOT NULL DEFAULT 'info',
+    "title" TEXT NOT NULL,
+    "message" TEXT,
+    "link" TEXT,
+    "read" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "Notification_userId_read_idx" ON "Notification"("userId", "read");
+
+CREATE TABLE IF NOT EXISTS "Note" (
+    "id" UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    "title" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "category" TEXT,
+    "pinned" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "Note_category_idx" ON "Note"("category");
+
 CREATE TABLE IF NOT EXISTS "ChatMessage" (
     "id" UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     "sessionId" TEXT NOT NULL,

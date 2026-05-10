@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, GripVertical, Calendar, Trash2 } from 'lucide-react';
+import { Plus, GripVertical, Calendar, Trash2, Edit2, Save, X } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 import { cn, getStageColor, formatCurrency, formatDateShort } from '@/lib/utils';
 import { Modal } from '@/components/ui/modal';
@@ -31,6 +31,7 @@ export function KanbanBoard() {
   const [detailModal, setDetailModal] = useState<{ lead: any; stage: LeadStage } | null>(null);
   const [draggedLead, setDraggedLead] = useState<{ lead: any; stage: LeadStage } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ lead: any; stage: LeadStage } | null>(null);
+  const [editingLead, setEditingLead] = useState<{ lead: any; stage: LeadStage } | null>(null);
 
   const fetchLeads = useCallback(async () => {
     try {
@@ -131,6 +132,44 @@ export function KanbanBoard() {
       }
     } catch {
       toast.error('Failed to add lead');
+    }
+  };
+
+  const saveLeadEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingLead) return;
+    const form = e.target as HTMLFormElement;
+    const data = new FormData(form);
+    const payload = {
+      id: editingLead.lead.id,
+      name: data.get('name') as string,
+      email: data.get('email') as string,
+      company: (data.get('company') as string) || '',
+      value: Number(data.get('value')) || 0,
+      score: Number(data.get('score')) || 0,
+      stage: data.get('stage') as string,
+      notes: (data.get('notes') as string) || '',
+      phone: (data.get('phone') as string) || '',
+      nextFollowUp: (data.get('nextFollowUp') as string) || null,
+    };
+
+    try {
+      const res = await fetch('/api/admin/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'leads', action: 'update', data: payload }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success('Lead updated');
+        setEditingLead(null);
+        setDetailModal(null);
+        fetchLeads();
+      } else {
+        toast.error('Failed to update lead');
+      }
+    } catch {
+      toast.error('Failed to update lead');
     }
   };
 
@@ -275,7 +314,7 @@ export function KanbanBoard() {
         </form>
       </Modal>
 
-      <Modal open={!!detailModal} onClose={() => setDetailModal(null)} title={detailModal?.lead.name || ''}>
+      <Modal open={!!detailModal && !editingLead} onClose={() => setDetailModal(null)} title={detailModal?.lead.name || ''}>
         {detailModal && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -302,12 +341,65 @@ export function KanbanBoard() {
                 <p className="text-sm">{detailModal.lead.notes}</p>
               </div>
             )}
+            {detailModal.lead.nextFollowUp && (
+              <div>
+                <p className="text-xs text-navy-400 mb-1">Next Follow Up</p>
+                <p className="text-sm">{formatDateShort(detailModal.lead.nextFollowUp)}</p>
+              </div>
+            )}
+            {detailModal.lead.phone && (
+              <div>
+                <p className="text-xs text-navy-400 mb-1">Phone</p>
+                <p className="text-sm">{detailModal.lead.phone}</p>
+              </div>
+            )}
             <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditingLead(detailModal)}>
+                <Edit2 className="w-4 h-4 mr-1" /> Edit
+              </Button>
               <Button variant="danger" className="flex-1" onClick={() => { setDeleteConfirm(detailModal); }}>
-                <Trash2 className="w-4 h-4 mr-1" /> Delete Lead
+                <Trash2 className="w-4 h-4 mr-1" /> Delete
               </Button>
             </div>
           </div>
+        )}
+      </Modal>
+
+      <Modal open={!!editingLead} onClose={() => setEditingLead(null)} title={`Edit: ${editingLead?.lead.name || ''}`} size="lg">
+        {editingLead && (
+          <form onSubmit={saveLeadEdit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Input name="name" label="Name" defaultValue={editingLead.lead.name} required />
+              <Input name="email" label="Email" type="email" defaultValue={editingLead.lead.email} required />
+              <Input name="company" label="Company" defaultValue={editingLead.lead.company || ''} />
+              <Input name="phone" label="Phone" defaultValue={editingLead.lead.phone || ''} />
+              <Input name="value" label="Value ($)" type="number" defaultValue={editingLead.lead.value || 0} />
+              <Input name="score" label="Score" type="number" defaultValue={editingLead.lead.score || 0} />
+              <Input name="nextFollowUp" label="Next Follow Up" type="date" defaultValue={editingLead.lead.nextFollowUp ? editingLead.lead.nextFollowUp.slice(0, 10) : ''} />
+              <div>
+                <label className="block text-sm font-medium text-navy-700 dark:text-white mb-1.5">Stage</label>
+                <select name="stage" defaultValue={editingLead.stage}
+                  className="w-full px-4 py-2.5 rounded-lg border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-navy-500">
+                  {stages.map((s) => (
+                    <option key={s.key} value={s.key}>{t(s.label)}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-navy-700 dark:text-white mb-1.5">Notes</label>
+              <textarea name="notes" rows={3} defaultValue={editingLead.lead.notes || ''}
+                className="w-full px-4 py-2.5 rounded-lg border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-navy-500 resize-none" />
+            </div>
+            <div className="flex gap-3">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setEditingLead(null)}>
+                <X className="w-4 h-4 mr-1" /> Cancel
+              </Button>
+              <Button type="submit" className="flex-1">
+                <Save className="w-4 h-4 mr-1" /> Save Changes
+              </Button>
+            </div>
+          </form>
         )}
       </Modal>
 
