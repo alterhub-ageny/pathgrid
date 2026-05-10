@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Notification error: ' + (e?.message || e) }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, message: 'Message received' });
+    return NextResponse.json({ success: true, message: 'Message received', conversationId: conversation.id });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error?.message || 'Unknown error' }, { status: 500 });
   }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, MessageCircle, ExternalLink } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 import { useAppStore } from '@/store/app-store';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ export default function ContactPage() {
   const siteSettings = useAppStore((s) => s.siteSettings);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const setChatOpen = useAppStore((s) => s.setChatOpen);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,11 +28,18 @@ export default function ContactPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      const json = await res.json().catch(() => ({}));
       if (res.ok) {
         setSubmitted(true);
         form.reset();
+        if (json.conversationId) {
+          localStorage.setItem('pathgrid_chat_handoff', JSON.stringify({
+            name: data.name,
+            email: data.email,
+            conversationId: json.conversationId,
+          }));
+        }
       } else {
-        const json = await res.json().catch(() => ({}));
         toast.error(json.message || 'Failed to send message');
       }
     } catch (err) {
@@ -41,6 +49,8 @@ export default function ContactPage() {
       setLoading(false);
     }
   };
+
+  const openChat = () => setChatOpen(true);
 
   return (
     <div className="pt-24 lg:pt-28">
@@ -62,8 +72,30 @@ export default function ContactPage() {
               transition={{ delay: 0.2 }}
             >
               {submitted ? (
-                <div className="p-8 rounded-2xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                  <h3 className="text-xl font-semibold text-green-800 dark:text-green-200 mb-2">{t('contact.successMessage')}</h3>
+                <div className="p-8 rounded-2xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 space-y-6">
+                  <h3 className="text-xl font-semibold text-green-800 dark:text-green-200">{t('contact.successMessage')}</h3>
+                  <p className="text-green-700 dark:text-green-300 text-sm">We'll review your message and get back to you. In the meantime, you can reach us directly:</p>
+                  <div className="space-y-3">
+                    <a href={`mailto:${siteSettings.email || 'hello@pathgrid.agency'}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-navy-800 border border-green-200 dark:border-green-700 hover:border-green-400 transition-all group">
+                      <Mail className="w-5 h-5 text-green-600" />
+                      <span className="text-sm font-medium text-navy-900 dark:text-white group-hover:text-green-600 transition-colors">Email us directly</span>
+                      <ExternalLink className="w-3.5 h-3.5 text-green-500 ml-auto" />
+                    </a>
+                    {siteSettings.whatsapp && (
+                      <a href={`https://wa.me/${siteSettings.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-navy-800 border border-green-200 dark:border-green-700 hover:border-green-400 transition-all group">
+                        <MessageCircle className="w-5 h-5 text-green-600" />
+                        <span className="text-sm font-medium text-navy-900 dark:text-white group-hover:text-green-600 transition-colors">Chat on WhatsApp</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-green-500 ml-auto" />
+                      </a>
+                    )}
+                    <button onClick={openChat}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-white font-medium hover:from-gold-600 hover:to-gold-700 transition-all">
+                      <MessageCircle className="w-5 h-5" />
+                      Open live chat
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5">

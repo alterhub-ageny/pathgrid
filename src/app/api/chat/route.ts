@@ -66,21 +66,34 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const sessionId = searchParams.get('sessionId');
   const email = searchParams.get('email');
+  const conversationId = searchParams.get('conversationId');
 
   const chatMessages = sessionId ? await getChatHistory(sessionId) : [];
 
   let conversationMessages: any[] = [];
-  if (email) {
+  if (conversationId) {
+    try {
+      const msgs = await prisma.message.findMany({
+        where: { conversationId, deletedAt: null },
+        orderBy: { createdAt: 'asc' },
+        include: { sender: { select: { role: true } } },
+        take: 100,
+      });
+      conversationMessages = msgs.map((m) => ({
+        role: m.sender.role === 'admin' || m.sender.role === 'staff' ? 'assistant' : 'user',
+        content: m.content,
+        createdAt: m.createdAt,
+        fromConversation: true,
+      }));
+    } catch { /* silent */ }
+  } else if (email) {
     try {
       const user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
       if (user) {
         const msgs = await prisma.message.findMany({
-          where: {
-            conversation: { clientId: user.id, deletedAt: null },
-            deletedAt: null,
-          },
+          where: { conversation: { clientId: user.id, deletedAt: null }, deletedAt: null },
           orderBy: { createdAt: 'asc' },
-          include: { sender: { select: { id: true, role: true } } },
+          include: { sender: { select: { role: true } } },
           take: 50,
         });
         conversationMessages = msgs.map((m) => ({

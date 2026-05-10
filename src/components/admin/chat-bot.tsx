@@ -62,12 +62,16 @@ export function ChatBot() {
     (async () => {
       try {
         const savedHandoff = localStorage.getItem(STORAGE_KEY_HANDOFF);
-        let email = '';
+        let handoff: any = null;
         if (savedHandoff) {
-          try { email = JSON.parse(savedHandoff).email || ''; } catch { /* ignore */ }
+          try { handoff = JSON.parse(savedHandoff); } catch { /* ignore */ }
         }
         const params = new URLSearchParams({ sessionId });
-        if (email) params.set('email', email);
+        if (handoff?.conversationId) {
+          params.set('conversationId', handoff.conversationId);
+        } else if (handoff?.email) {
+          params.set('email', handoff.email);
+        }
         const res = await fetch(`/api/chat?${params}`);
         const history = await res.json();
         if (Array.isArray(history) && history.length > 0) {
@@ -83,6 +87,36 @@ export function ChatBot() {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [open]);
+
+  // Poll for new messages when handoff is active
+  useEffect(() => {
+    if (!handoffData?.email && !handoffData?.conversationId) return;
+    const interval = setInterval(async () => {
+      try {
+        const params = new URLSearchParams();
+        if (handoffData?.conversationId) {
+          params.set('conversationId', handoffData.conversationId);
+        } else if (handoffData?.email) {
+          params.set('email', handoffData.email);
+        }
+        const res = await fetch(`/api/chat?${params}`);
+        const history: any[] = await res.json();
+        if (Array.isArray(history)) {
+          setTimeout(() => {
+            const current = useAppStore.getState().chatMessages;
+            const existing = new Set(current.map((m: any) => m.content + (m._t || '')));
+            const toAdd = history.filter((m: any) => m.fromConversation && !existing.has(m.content + m.createdAt));
+            if (toAdd.length > 0) {
+              const merged = [...current, ...toAdd.map((m: any) => ({ role: m.role, content: m.content, _t: m.createdAt }))]
+                .sort((a: any, b: any) => new Date(a._t || 0).getTime() - new Date(b._t || 0).getTime());
+              useAppStore.getState().setChatMessages(merged);
+            }
+          }, 0);
+        }
+      } catch { /* silent */ }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [handoffData?.email, handoffData?.conversationId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
