@@ -25,6 +25,7 @@ export function Header() {
   const pathname = usePathname();
   const { t, locale } = useTranslation();
   const isRtl = useAppStore((s) => s.isRtl);
+  const siteSettings = useAppStore((s) => s.siteSettings);
 
   const localePath = `/${locale}`;
 
@@ -42,7 +43,7 @@ export function Header() {
             href={`/${locale}`}
             className="relative z-10 text-xl font-bold tracking-tight text-navy-900 dark:text-white"
           >
-            <span className="font-serif">{t('common.siteName')}</span>
+            <span className="font-serif">{siteSettings.siteName || t('common.siteName')}</span>
           </Link>
 
           <div className="hidden lg:flex items-center gap-1">
@@ -84,7 +85,7 @@ export function Header() {
               {t('common.getStarted')}
             </Link>
             <button
-              className="lg:hidden p-2 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-800 transition-colors"
+              className="lg:hidden p-2 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-800 transition-colors text-navy-900 dark:text-white"
               onClick={() => setMobileOpen(!mobileOpen)}
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

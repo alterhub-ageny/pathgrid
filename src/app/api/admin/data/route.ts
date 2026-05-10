@@ -23,6 +23,7 @@ const models: Record<string, any> = {
   notes: prisma.note,
   activities: prisma.activity,
   projects: prisma.project,
+  stages: prisma.pipelineStage,
 };
 
 const softDeleteModels = new Set([

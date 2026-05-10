@@ -2,7 +2,7 @@ export type Locale = 'en' | 'fr' | 'ar';
 
 export type UserRole = 'admin' | 'staff' | 'client';
 
-export type LeadStage = 'cold' | 'contacted' | 'meeting' | 'proposal' | 'won' | 'lost';
+export type LeadStage = string;
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 export type InvoiceType = 'income' | 'expense';

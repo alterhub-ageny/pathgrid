@@ -50,6 +50,7 @@ const navCategories: Category[] = [
     items: [
       { label: 'admin.messages', href: '/admin/messages', icon: Mail, roles: ['admin', 'staff'] },
       { label: 'admin.clients', href: '/admin/clients', icon: Users, roles: ['admin'] },
+      { label: 'Stages', href: '/admin/pipeline-stages', icon: Target, roles: ['admin'] },
       { label: 'admin.pipeline', href: '/admin/pipeline', icon: Target, roles: ['admin', 'staff'] },
       { label: 'admin.invoices', href: '/admin/invoices', icon: DollarSign, roles: ['admin', 'staff'] },
       { label: 'admin.projects', href: '/admin/projects', icon: FolderKanban, roles: ['admin', 'staff'] },

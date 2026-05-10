@@ -6,11 +6,13 @@ interface AppState {
   theme: 'light' | 'dark';
   locale: Locale;
   isRtl: boolean;
+  siteSettings: Record<string, string>;
   setSidebarOpen: (open: boolean) => void;
   toggleSidebar: () => void;
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
   setLocale: (locale: Locale) => void;
+  fetchSettings: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -18,6 +20,7 @@ export const useAppStore = create<AppState>((set) => ({
   theme: 'light',
   locale: 'en',
   isRtl: false,
+  siteSettings: {},
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setTheme: (theme) => {
@@ -39,4 +42,13 @@ export const useAppStore = create<AppState>((set) => ({
       locale,
       isRtl: locale === 'ar',
     }),
+  fetchSettings: async () => {
+    try {
+      const res = await fetch('/api/settings');
+      const data = await res.json();
+      if (typeof data === 'object' && !Array.isArray(data)) {
+        set({ siteSettings: data });
+      }
+    } catch { /* ignore */ }
+  },
 }));

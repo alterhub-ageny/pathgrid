@@ -99,7 +99,7 @@ export function AdminHeader() {
       <div className="flex items-center justify-between h-full px-6">
         <button
           onClick={toggleSidebar}
-          className="p-2 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-800 transition-colors"
+          className="p-2 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-800 transition-colors text-navy-900 dark:text-white"
         >
           <Menu className="w-5 h-5" />
         </button>

@@ -10,9 +10,14 @@ import { useAppStore } from '@/store/app-store';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
+const SETTING_KEYS = [
+  'siteName', 'tagline', 'email', 'phone', 'address',
+  'twitter', 'linkedin', 'dribbble',
+];
+
 export default function AdminSettingsPage() {
   const { t } = useTranslation();
-  const { theme, setTheme } = useAppStore();
+  const { theme, setTheme, fetchSettings } = useAppStore();
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -43,30 +48,26 @@ export default function AdminSettingsPage() {
     const formData = new FormData(form);
 
     try {
-      const updates = [
-        { key: 'siteName', value: formData.get('siteName') as string },
-        { key: 'tagline', value: formData.get('tagline') as string },
-        { key: 'email', value: formData.get('email') as string },
-      ];
-
-      for (const item of updates) {
-        const id = getSettingId(item.key);
+      for (const key of SETTING_KEYS) {
+        const value = formData.get(key) as string;
+        const id = getSettingId(key);
         if (id) {
           await fetch('/api/admin/data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'settings', action: 'update', data: { id, ...item } }),
+            body: JSON.stringify({ type: 'settings', action: 'update', data: { id, key, value } }),
           });
         } else {
           await fetch('/api/admin/data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'settings', action: 'create', data: item }),
+            body: JSON.stringify({ type: 'settings', action: 'create', data: { key, value } }),
           });
         }
       }
 
       toast.success('Settings saved');
+      fetchSettings();
     } catch {
       toast.error('Failed to save settings');
     } finally {
@@ -87,11 +88,13 @@ export default function AdminSettingsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <h3 className="text-lg font-semibold mb-4 text-navy-900 dark:text-white">General Settings</h3>
+          <h3 className="text-lg font-semibold mb-4 text-navy-900 dark:text-white">Site Information</h3>
           <form onSubmit={handleSave} className="space-y-4">
             <Input name="siteName" label="Site Name" defaultValue={getSetting('siteName', 'Pathgrid Agency')} />
             <Input name="tagline" label="Tagline" defaultValue={getSetting('tagline', 'Where Strategy Meets Creativity')} />
-            <Input name="email" label="Contact Email" defaultValue={getSetting('email', 'hello@pathgrid.agency')} />
+            <Input name="email" label="Contact Email" defaultValue={getSetting('email', 'hello@pathgrid.agency')} type="email" />
+            <Input name="phone" label="Phone" defaultValue={getSetting('phone', '+1 (555) 123-4567')} />
+            <Input name="address" label="Address" defaultValue={getSetting('address', 'San Francisco, CA')} />
             <div>
               <label className="block text-sm font-medium text-navy-700 dark:text-white mb-1.5">Theme</label>
               <div className="flex gap-3">
@@ -109,55 +112,66 @@ export default function AdminSettingsPage() {
           </form>
         </Card>
 
-        <Card>
-          <h3 className="text-lg font-semibold mb-4 text-navy-900 dark:text-white">Change Password</h3>
-          <form onSubmit={async (e) => {
-            e.preventDefault();
-            const form = e.target as HTMLFormElement;
-            const formData = new FormData(form);
-            const currentPassword = formData.get('currentPassword') as string;
-            const newPassword = formData.get('newPassword') as string;
-            const confirmPassword = formData.get('confirmPassword') as string;
+        <div className="space-y-6">
+          <Card>
+            <h3 className="text-lg font-semibold mb-4 text-navy-900 dark:text-white">Social Links</h3>
+            <form onSubmit={handleSave} className="space-y-4" id="social-form">
+              <Input name="twitter" label="Twitter URL" defaultValue={getSetting('twitter', '')} placeholder="https://twitter.com/yourhandle" />
+              <Input name="linkedin" label="LinkedIn URL" defaultValue={getSetting('linkedin', '')} placeholder="https://linkedin.com/company/yourpage" />
+              <Input name="dribbble" label="Dribbble URL" defaultValue={getSetting('dribbble', '')} placeholder="https://dribbble.com/yourhandle" />
+            </form>
+          </Card>
 
-            if (!currentPassword || !newPassword || !confirmPassword) {
-              toast.error('All fields are required');
-              return;
-            }
-            if (newPassword.length < 6) {
-              toast.error('New password must be at least 6 characters');
-              return;
-            }
-            if (newPassword !== confirmPassword) {
-              toast.error('New passwords do not match');
-              return;
-            }
+          <Card>
+            <h3 className="text-lg font-semibold mb-4 text-navy-900 dark:text-white">Change Password</h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const formData = new FormData(form);
+              const currentPassword = formData.get('currentPassword') as string;
+              const newPassword = formData.get('newPassword') as string;
+              const confirmPassword = formData.get('confirmPassword') as string;
 
-            setChangingPassword(true);
-            try {
-              const res = await fetch('/api/admin/change-password', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ currentPassword, newPassword }),
-              });
-              const json = await res.json();
-              if (res.ok) {
-                toast.success('Password changed successfully');
-                form.reset();
-              } else {
-                toast.error(json.error || 'Failed to change password');
+              if (!currentPassword || !newPassword || !confirmPassword) {
+                toast.error('All fields are required');
+                return;
               }
-            } catch {
-              toast.error('Failed to change password');
-            } finally {
-              setChangingPassword(false);
-            }
-          }} className="space-y-4">
-            <Input name="currentPassword" label="Current Password" type="password" required />
-            <Input name="newPassword" label="New Password" type="password" required />
-            <Input name="confirmPassword" label="Confirm Password" type="password" required />
-            <Button type="submit" loading={changingPassword}>{t('common.save')}</Button>
-          </form>
-        </Card>
+              if (newPassword.length < 6) {
+                toast.error('New password must be at least 6 characters');
+                return;
+              }
+              if (newPassword !== confirmPassword) {
+                toast.error('New passwords do not match');
+                return;
+              }
+
+              setChangingPassword(true);
+              try {
+                const res = await fetch('/api/admin/change-password', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ currentPassword, newPassword }),
+                });
+                const json = await res.json();
+                if (res.ok) {
+                  toast.success('Password changed successfully');
+                  form.reset();
+                } else {
+                  toast.error(json.error || 'Failed to change password');
+                }
+              } catch {
+                toast.error('Failed to change password');
+              } finally {
+                setChangingPassword(false);
+              }
+            }} className="space-y-4">
+              <Input name="currentPassword" label="Current Password" type="password" required />
+              <Input name="newPassword" label="New Password" type="password" required />
+              <Input name="confirmPassword" label="Confirm Password" type="password" required />
+              <Button type="submit" loading={changingPassword}>{t('common.save')}</Button>
+            </form>
+          </Card>
+        </div>
       </div>
     </div>
   );

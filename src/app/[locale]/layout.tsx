@@ -27,7 +27,9 @@ export default function LocaleLayout({ children }: { children: React.ReactNode }
   const params = useParams();
   const pathname = usePathname();
   const locale = (params?.locale as Locale) || 'en';
-  const { setLocale } = useAppStore();
+  const { setLocale, fetchSettings } = useAppStore();
+
+  useEffect(() => { fetchSettings(); }, [fetchSettings]);
 
   const isAdmin = pathname?.includes('/admin/') || pathname?.endsWith('/admin');
   const isClientPortal = pathname?.includes('/client-portal/') || pathname?.endsWith('/client-portal');
