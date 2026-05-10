@@ -38,10 +38,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Email is required' }, { status: 400 });
       }
 
-      let client = await prisma.user.findUnique({ where: { email } }).catch(() => null);
+      const normalizedEmail = email.toLowerCase().trim();
+      let client = await prisma.user.findUnique({ where: { email: normalizedEmail } }).catch(() => null);
       if (!client) {
         client = await prisma.user.create({
-          data: { name: name || email, email, role: 'client' },
+          data: { name: name || normalizedEmail, email: normalizedEmail, role: 'client' },
         }).catch(() => null);
       }
 

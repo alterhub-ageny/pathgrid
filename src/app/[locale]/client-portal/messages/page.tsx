@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { Send, User, Loader2, MessageSquare, Plus, X, Ticket } from 'lucide-react';
+import { Send, User, Loader2, MessageSquare, Plus, X, Ticket, Bot } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+
+const STORAGE_KEY_HANDOFF = 'pathgrid_chat_handoff';
 
 export default function ClientMessagesPage() {
   const { data: session } = useSession();
@@ -22,6 +24,25 @@ export default function ClientMessagesPage() {
   const [ticketLoading, setTicketLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const userId = (session?.user as any)?.id;
+  const isLoggedIn = !!session;
+
+  // Restore handoff conversation for guests
+  const [guestConvId, setGuestConvId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      const saved = localStorage.getItem(STORAGE_KEY_HANDOFF);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.conversationId) {
+            setGuestConvId(parsed.conversationId);
+            setActiveConv(parsed.conversationId);
+          }
+        } catch { /* ignore */ }
+      }
+    }
+  }, [isLoggedIn]);
 
   const fetchConversations = useCallback(async () => {
     try {
@@ -40,8 +61,14 @@ export default function ClientMessagesPage() {
   }, []);
 
   useEffect(() => {
-    fetchConversations().finally(() => setLoading(false));
-  }, [fetchConversations]);
+    if (isLoggedIn) {
+      fetchConversations().finally(() => setLoading(false));
+    } else if (guestConvId) {
+      fetchMessages(guestConvId).finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [isLoggedIn, guestConvId, fetchConversations, fetchMessages]);
 
   useEffect(() => {
     if (activeConv) fetchMessages(activeConv);
@@ -51,13 +78,12 @@ export default function ClientMessagesPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Poll for new messages when a conversation is active
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (activeConv) fetchMessages(activeConv);
-      fetchConversations();
-    }, 10000);
+    if (!activeConv) return;
+    const interval = setInterval(() => fetchMessages(activeConv), 10000);
     return () => clearInterval(interval);
-  }, [activeConv, fetchMessages, fetchConversations]);
+  }, [activeConv, fetchMessages]);
 
   const sendMessage = async () => {
     if (!input.trim() || !activeConv) return;
@@ -71,9 +97,9 @@ export default function ClientMessagesPage() {
       if (res.ok) {
         setInput('');
         fetchMessages(activeConv);
-        fetchConversations();
       } else {
-        toast.error('Failed to send message');
+        const err = await res.json();
+        toast.error(err.error || 'Failed to send message');
       }
     } catch {
       toast.error('Network error');
@@ -111,65 +137,91 @@ export default function ClientMessagesPage() {
     }
   };
 
+  if (!isLoggedIn && !guestConvId) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 className="text-4xl font-serif font-bold text-navy-900 dark:text-white mb-10">Messages</h1>
+        <Card hover={false} className="p-12 text-center">
+          <MessageSquare className="w-16 h-16 text-navy-300 dark:text-navy-600 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-navy-900 dark:text-white mb-2">No active conversations</h3>
+          <p className="text-navy-400 max-w-md mx-auto">
+            Use the chat bot on any page to start a conversation with our team. Your messages will appear here.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex items-center justify-between mb-10">
         <h1 className="text-4xl font-serif font-bold text-navy-900 dark:text-white">Messages</h1>
-        <Button onClick={() => setShowTicket(true)}>
-          <Plus className="w-4 h-4 mr-2" /> New Ticket
-        </Button>
+        {isLoggedIn && (
+          <Button onClick={() => setShowTicket(true)}>
+            <Plus className="w-4 h-4 mr-2" /> New Ticket
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 space-y-3">
-          {loading ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-navy-400" /></div>
-          ) : conversations.length === 0 ? (
-            <Card hover={false} className="p-6 text-center">
-              <MessageSquare className="w-10 h-10 text-navy-300 mx-auto mb-2" />
-              <p className="text-sm text-navy-400">No conversations yet. Open a ticket to get started.</p>
-              <Button size="sm" className="mt-3" onClick={() => setShowTicket(true)}>
-                <Plus className="w-3 h-3 mr-1" /> New Ticket
-              </Button>
-            </Card>
-          ) : (
-            conversations.map((conv) => (
-              <button
-                key={conv.id}
-                onClick={() => setActiveConv(conv.id)}
-                className={`w-full text-left p-4 rounded-xl border transition-colors ${
-                  activeConv === conv.id
-                    ? 'bg-navy-100 dark:bg-navy-800 border-navy-300 dark:border-navy-600'
-                    : 'bg-white dark:bg-navy-800 border-navy-100 dark:border-navy-700 hover:bg-navy-50 dark:hover:bg-navy-700'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-navy-200 dark:bg-navy-700 flex items-center justify-center">
-                    <User className="w-5 h-5 text-navy-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-navy-900 dark:text-white truncate">
-                        {conv.subject || 'Conversation'}
-                      </p>
-                      {conv._count?.messages > 0 && (
-                        <span className="w-2 h-2 rounded-full bg-gold-500 shrink-0" />
-                      )}
+        {/* Sidebar — only for logged-in users with multiple conversations */}
+        {isLoggedIn && (
+          <div className="lg:col-span-1 space-y-3">
+            {loading ? (
+              <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-navy-400" /></div>
+            ) : conversations.length === 0 ? (
+              <Card hover={false} className="p-6 text-center">
+                <MessageSquare className="w-10 h-10 text-navy-300 mx-auto mb-2" />
+                <p className="text-sm text-navy-400">No conversations yet. Open a ticket to get started.</p>
+                <Button size="sm" className="mt-3" onClick={() => setShowTicket(true)}>
+                  <Plus className="w-3 h-3 mr-1" /> New Ticket
+                </Button>
+              </Card>
+            ) : (
+              conversations.map((conv) => (
+                <button
+                  key={conv.id}
+                  onClick={() => setActiveConv(conv.id)}
+                  className={`w-full text-left p-4 rounded-xl border transition-colors ${
+                    activeConv === conv.id
+                      ? 'bg-navy-100 dark:bg-navy-800 border-navy-300 dark:border-navy-600'
+                      : 'bg-white dark:bg-navy-800 border-navy-100 dark:border-navy-700 hover:bg-navy-50 dark:hover:bg-navy-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-navy-200 dark:bg-navy-700 flex items-center justify-center">
+                      <User className="w-5 h-5 text-navy-500" />
                     </div>
-                    <p className="text-xs text-navy-400 mt-0.5">
-                      {conv._count?.messages || 0} unread
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-navy-900 dark:text-white truncate">
+                          {conv.subject || 'Conversation'}
+                        </p>
+                        {conv._count?.messages > 0 && (
+                          <span className="w-2 h-2 rounded-full bg-gold-500 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-xs text-navy-400 mt-0.5">
+                        {conv._count?.messages || 0} unread
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
+                </button>
+              ))
+            )}
+          </div>
+        )}
 
-        <div className="lg:col-span-2">
+        {/* Messages area */}
+        <div className={isLoggedIn ? 'lg:col-span-2' : 'lg:col-span-3 max-w-3xl mx-auto w-full'}>
           {activeConv ? (
             <Card hover={false} className="flex flex-col h-[500px]">
               <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+                {messages.length === 0 && (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-sm text-navy-400">No messages yet. Send a message to get started.</p>
+                  </div>
+                )}
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.senderId === userId ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[70%] p-3 rounded-2xl ${

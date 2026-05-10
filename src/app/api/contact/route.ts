@@ -11,12 +11,13 @@ export async function POST(request: Request) {
     }
 
     // Step 1: Find or create user
+    const normalizedEmail = email.toLowerCase().trim();
     let client;
     try {
-      client = await prisma.user.findUnique({ where: { email } });
+      client = await prisma.user.findUnique({ where: { email: normalizedEmail } });
       if (!client) {
         client = await prisma.user.create({
-          data: { name, email, role: 'client' },
+          data: { name, email: normalizedEmail, role: 'client' },
         });
       }
     } catch (e: any) {
