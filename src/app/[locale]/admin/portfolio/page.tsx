@@ -1,13 +1,20 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useTranslation } from '@/hooks/use-translation';
 import { Badge } from '@/components/ui/badge';
 import { CrudTable } from '@/components/admin/crud-table';
 
 export default function AdminPortfolioPage() {
   const { t } = useTranslation();
+  const [industries, setIndustries] = useState<string[]>([]);
 
-  const industries = ['Technology', 'Fintech', 'Branding', 'E-commerce', 'Healthcare', 'Education', 'Real Estate'];
+  useEffect(() => {
+    fetch('/api/admin/distinct?field=portfolio-industries')
+      .then(r => r.json())
+      .then(setIndustries)
+      .catch(() => {});
+  }, []);
 
   return (
     <CrudTable
@@ -26,7 +33,7 @@ export default function AdminPortfolioPage() {
         { key: 'description', label: t('admin.fields.description'), type: 'richtext', aiPrompt: 'Write a compelling description for a portfolio project in a digital agency. Describe the project scope and approach.' },
         { key: 'client', label: t('admin.fields.client') },
         { key: 'category', label: t('admin.fields.category') },
-        { key: 'industry', label: t('admin.fields.industry'), type: 'select', options: industries },
+        { key: 'industry', label: t('admin.fields.industry'), type: 'select', options: industries.length ? industries : ['Technology', 'Fintech', 'Branding', 'E-commerce', 'Healthcare', 'Education', 'Real Estate'] },
         { key: 'technologies', label: t('admin.fields.technologies') },
         { key: 'result', label: t('admin.fields.result'), type: 'richtext', aiPrompt: 'Write a brief summary of project results and outcomes. Mention metrics and achievements.' },
         { key: 'image', label: t('admin.fields.image'), type: 'image' },

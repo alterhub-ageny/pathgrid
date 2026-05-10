@@ -92,7 +92,7 @@ export default function AdminMediaPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold">{t('admin.media')}</h1>
+          <h1 className="text-3xl font-serif font-bold text-navy-900 dark:text-white">{t('admin.media')}</h1>
           <p className="text-navy-500 dark:text-navy-400 mt-1 text-sm">{t('admin.fields.manageMedia')}</p>
         </div>
         <label className="flex items-center gap-2 px-4 py-2.5 bg-navy-700 dark:bg-gold-500 text-white dark:text-navy-900 rounded-xl text-sm font-medium cursor-pointer hover:bg-navy-600 dark:hover:bg-gold-400 transition-colors">

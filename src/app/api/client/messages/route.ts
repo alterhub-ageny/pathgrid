@@ -62,6 +62,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, data: message });
     }
 
+    if (action === 'create-ticket') {
+      const conversation = await prisma.conversation.create({
+        data: {
+          subject: data.subject || 'New Ticket',
+          clientId: userId,
+        },
+      });
+
+      if (data.message?.trim()) {
+        await prisma.message.create({
+          data: { content: data.message.trim(), senderId: userId, conversationId: conversation.id },
+        });
+      }
+
+      // Notify admins
+      const admins = await prisma.user.findMany({ where: { role: { in: ['admin', 'staff'] } } });
+      for (const admin of admins) {
+        await prisma.notification.create({
+          data: {
+            userId: admin.id,
+            type: 'info',
+            title: 'New support ticket',
+            message: `${(session.user as any)?.name || 'A client'} opened a new ticket: ${data.subject}`,
+            link: `/${admin.locale || 'en'}/admin/messages`,
+          },
+        }).catch(() => {});
+      }
+
+      return NextResponse.json({ success: true, data: conversation });
+    }
+
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed' }, { status: 500 });

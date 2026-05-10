@@ -1,13 +1,24 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useTranslation } from '@/hooks/use-translation';
 import { Badge } from '@/components/ui/badge';
 import { CrudTable } from '@/components/admin/crud-table';
 
-const statuses = ['active', 'completed', 'on-hold', 'cancelled'];
+const defaultStatuses = ['active', 'completed', 'on-hold', 'cancelled'];
 
 export default function AdminProjectsPage() {
   const { t } = useTranslation();
+  const [statuses, setStatuses] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/api/admin/distinct?field=project-statuses')
+      .then(r => r.json())
+      .then(setStatuses)
+      .catch(() => {});
+  }, []);
+
+  const s = statuses.length ? statuses : defaultStatuses;
 
   return (
     <CrudTable
@@ -25,7 +36,7 @@ export default function AdminProjectsPage() {
       formFields={[
         { key: 'title', label: t('admin.fields.title') },
         { key: 'description', label: t('admin.fields.description'), type: 'textarea' },
-        { key: 'status', label: t('admin.fields.status'), type: 'select', options: statuses },
+        { key: 'status', label: t('admin.fields.status'), type: 'select', options: s },
         { key: 'clientId', label: t('admin.fields.client'), type: 'select', optionsFromApi: 'clients', optionsLabelKey: 'name', optionsValueKey: 'id' },
         { key: 'budget', label: t('admin.fields.budget'), type: 'number' },
         { key: 'progress', label: t('admin.fields.progress'), type: 'number' },

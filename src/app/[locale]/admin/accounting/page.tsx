@@ -44,7 +44,7 @@ export default function AccountingPage() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months = Array.from({ length: 12 }, (_, i) => new Date(0, i).toLocaleDateString('en', { month: 'short' }));
   const monthlyData = months.map((month, i) => {
     const monthTx = transactions.filter((tx: any) => {
       const d = new Date(tx.date);
@@ -134,7 +134,7 @@ export default function AccountingPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold">{t('accounting.title')}</h1>
+          <h1 className="text-3xl font-serif font-bold text-navy-900 dark:text-white">{t('accounting.title')}</h1>
           <p className="text-navy-500 dark:text-navy-400 mt-1">{t('admin.statsOverview')}</p>
         </div>
         <div className="flex gap-2">
@@ -159,7 +159,7 @@ export default function AccountingPage() {
               <div className="flex items-center justify-between mb-3">
                 <stat.icon className={`w-5 h-5 ${stat.color}`} />
               </div>
-              <p className="text-2xl font-bold font-serif">{typeof stat.value === 'number' ? formatCurrency(stat.value) : stat.value}</p>
+              <p className="text-2xl font-bold font-serif text-navy-900 dark:text-white">{typeof stat.value === 'number' ? formatCurrency(stat.value) : stat.value}</p>
               <p className="text-sm text-navy-400 mt-1">{stat.label}</p>
             </Card>
           </motion.div>
@@ -167,7 +167,7 @@ export default function AccountingPage() {
       </div>
 
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">{t('accounting.profitLoss')}</h3>
+        <h3 className="text-lg font-semibold mb-4 text-navy-900 dark:text-white">{t('accounting.profitLoss')}</h3>
         <ResponsiveContainer width="100%" height={350}>
           <AreaChart data={monthlyData}>
             <defs>
@@ -189,7 +189,7 @@ export default function AccountingPage() {
 
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">{t('accounting.invoices')}</h3>
+          <h3 className="text-lg font-semibold text-navy-900 dark:text-white">{t('accounting.invoices')}</h3>
           <button onClick={() => {
             const csv = [['Number','Amount','Status','Date'], ...invoices.map((i: any) => [i.number, i.amount, i.status, i.createdAt])].map(r => r.join(',')).join('\n');
             const blob = new Blob([csv], { type: 'text/csv' });

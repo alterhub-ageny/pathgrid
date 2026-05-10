@@ -1,13 +1,20 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useTranslation } from '@/hooks/use-translation';
 import { Badge } from '@/components/ui/badge';
 import { CrudTable } from '@/components/admin/crud-table';
 
 export default function AdminBlogPage() {
   const { t } = useTranslation();
+  const [categories, setCategories] = useState<string[]>([]);
 
-  const categories = ['Technology', 'Design', 'Strategy', 'Development', 'Business', 'AI', 'Marketing'];
+  useEffect(() => {
+    fetch('/api/admin/distinct?field=blog-categories')
+      .then(r => r.json())
+      .then(setCategories)
+      .catch(() => {});
+  }, []);
 
   return (
     <CrudTable
@@ -40,7 +47,7 @@ export default function AdminBlogPage() {
         { key: 'excerpt', label: t('admin.fields.excerpt'), type: 'textarea', aiPrompt: 'Write a 2-sentence excerpt for a blog post about digital agency topics. Keep it concise.' },
         { key: 'content', label: t('admin.fields.content'), type: 'richtext', aiPrompt: 'Write a full blog post about digital agency services, strategy, and best practices. Use markdown formatting with headings, lists, and paragraphs.' },
         { key: 'image', label: t('admin.fields.image'), type: 'image' },
-        { key: 'category', label: t('admin.fields.category'), type: 'select', options: categories },
+        { key: 'category', label: t('admin.fields.category'), type: 'select', options: categories.length ? categories : ['Technology', 'Design', 'Strategy', 'Development', 'Business', 'AI', 'Marketing'] },
         { key: 'tags', label: t('admin.fields.tags') },
         { key: 'author', label: t('admin.fields.author') },
         { key: 'publishAt', label: t('admin.fields.schedulePublish'), type: 'datetime-local' },

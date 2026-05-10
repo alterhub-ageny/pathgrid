@@ -1,13 +1,24 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useTranslation } from '@/hooks/use-translation';
 import { Badge } from '@/components/ui/badge';
 import { CrudTable } from '@/components/admin/crud-table';
 
-const eventTypes = ['meeting', 'internal', 'deadline', 'general'];
+const defaultEventTypes = ['meeting', 'internal', 'deadline', 'general'];
 
 export default function AdminCalendarPage() {
   const { t } = useTranslation();
+  const [eventTypes, setEventTypes] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/api/admin/distinct?field=event-types')
+      .then(r => r.json())
+      .then(setEventTypes)
+      .catch(() => {});
+  }, []);
+
+  const types = eventTypes.length ? eventTypes : defaultEventTypes;
 
   return (
     <CrudTable
@@ -26,7 +37,7 @@ export default function AdminCalendarPage() {
       formFields={[
         { key: 'title', label: 'Title' },
         { key: 'start', label: 'Date', type: 'datetime-local' },
-        { key: 'type', label: 'Type', type: 'select', options: eventTypes },
+        { key: 'type', label: 'Type', type: 'select', options: types },
       ]}
     />
   );

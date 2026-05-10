@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Smartphone, Key, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
@@ -56,7 +56,6 @@ export default function AdminSecurityPage() {
       if (json.success) {
         toast.success('Two-factor authentication enabled');
         setSetupStep('enabled');
-        // Refresh session to get updated twoFactorEnabled
         setTimeout(() => window.location.reload(), 1000);
       } else {
         toast.error(json.error || 'Invalid code');
@@ -97,15 +96,17 @@ export default function AdminSecurityPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-serif font-bold">{t('admin.security')}</h1>
-        <p className="text-navy-500 dark:text-navy-400 mt-1 text-sm">{t('admin.fields.manageSecurity')}</p>
+        <h1 className="text-3xl font-serif font-bold text-navy-900 dark:text-white">{t('admin.security')}</h1>
+        <p className="text-sm text-navy-500 dark:text-navy-400 mt-1">{t('admin.fields.manageSecurity')}</p>
       </div>
 
-      <div className="bg-white dark:bg-navy-800 rounded-2xl border border-navy-100 dark:border-navy-700 p-6 max-w-2xl">
-        <div className="flex items-center gap-3 mb-6">
-          <Shield className="w-6 h-6 text-navy-500" />
+      <div className="bg-white dark:bg-navy-800 rounded-2xl border border-navy-100 dark:border-navy-700 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-navy-100 dark:bg-navy-700 flex items-center justify-center">
+            <Shield className="w-5 h-5 text-navy-700 dark:text-gold-500" />
+          </div>
           <div>
-            <h2 className="text-lg font-semibold">{t('auth.twoFactorTitle')}</h2>
+            <h2 className="text-lg font-semibold text-navy-900 dark:text-white">{t('auth.twoFactorTitle')}</h2>
             <p className="text-sm text-navy-500 dark:text-navy-400">Add an extra layer of security to your account</p>
           </div>
         </div>

@@ -81,13 +81,13 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-serif font-bold">{t('admin.settings')}</h1>
-        <p className="text-navy-500 dark:text-navy-400 mt-1">Configure your application settings</p>
+        <h1 className="text-3xl font-serif font-bold text-navy-900 dark:text-white">{t('admin.settings')}</h1>
+        <p className="text-navy-500 dark:text-navy-300 mt-1">Configure your application settings</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <h3 className="text-lg font-semibold mb-4">General Settings</h3>
+          <h3 className="text-lg font-semibold mb-4 text-navy-900 dark:text-white">General Settings</h3>
           <form onSubmit={handleSave} className="space-y-4">
             <Input name="siteName" label="Site Name" defaultValue={getSetting('siteName', 'Pathgrid Agency')} />
             <Input name="tagline" label="Tagline" defaultValue={getSetting('tagline', 'Where Strategy Meets Creativity')} />
@@ -110,7 +110,7 @@ export default function AdminSettingsPage() {
         </Card>
 
         <Card>
-          <h3 className="text-lg font-semibold mb-4">Change Password</h3>
+          <h3 className="text-lg font-semibold mb-4 text-navy-900 dark:text-white">Change Password</h3>
           <form onSubmit={async (e) => {
             e.preventDefault();
             const form = e.target as HTMLFormElement;

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { Send, User, Loader2, MessageSquare } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Send, User, Loader2, MessageSquare, Plus, X, Ticket } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -15,6 +16,10 @@ export default function ClientMessagesPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [showTicket, setShowTicket] = useState(false);
+  const [ticketSubject, setTicketSubject] = useState('');
+  const [ticketMessage, setTicketMessage] = useState('');
+  const [ticketLoading, setTicketLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const userId = (session?.user as any)?.id;
 
@@ -77,9 +82,43 @@ export default function ClientMessagesPage() {
     }
   };
 
+  const createTicket = async () => {
+    if (!ticketSubject.trim()) { toast.error('Subject is required'); return; }
+    setTicketLoading(true);
+    try {
+      const res = await fetch('/api/client/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create-ticket',
+          data: { subject: ticketSubject.trim(), message: ticketMessage.trim() },
+        }),
+      });
+      if (res.ok) {
+        toast.success('Ticket created!');
+        setShowTicket(false);
+        setTicketSubject('');
+        setTicketMessage('');
+        fetchConversations();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to create ticket');
+      }
+    } catch {
+      toast.error('Network error');
+    } finally {
+      setTicketLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-4xl font-serif font-bold text-navy-900 dark:text-white mb-10">Messages</h1>
+      <div className="flex items-center justify-between mb-10">
+        <h1 className="text-4xl font-serif font-bold text-navy-900 dark:text-white">Messages</h1>
+        <Button onClick={() => setShowTicket(true)}>
+          <Plus className="w-4 h-4 mr-2" /> New Ticket
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-3">
@@ -88,7 +127,10 @@ export default function ClientMessagesPage() {
           ) : conversations.length === 0 ? (
             <Card hover={false} className="p-6 text-center">
               <MessageSquare className="w-10 h-10 text-navy-300 mx-auto mb-2" />
-              <p className="text-sm text-navy-400">No conversations yet</p>
+              <p className="text-sm text-navy-400">No conversations yet. Open a ticket to get started.</p>
+              <Button size="sm" className="mt-3" onClick={() => setShowTicket(true)}>
+                <Plus className="w-3 h-3 mr-1" /> New Ticket
+              </Button>
             </Card>
           ) : (
             conversations.map((conv) => (
@@ -107,9 +149,11 @@ export default function ClientMessagesPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-navy-900 dark:text-white">{conv.subject || 'Conversation'}</p>
+                      <p className="text-sm font-semibold text-navy-900 dark:text-white truncate">
+                        {conv.subject || 'Conversation'}
+                      </p>
                       {conv._count?.messages > 0 && (
-                        <span className="w-2 h-2 rounded-full bg-gold-500" />
+                        <span className="w-2 h-2 rounded-full bg-gold-500 shrink-0" />
                       )}
                     </div>
                     <p className="text-xs text-navy-400 mt-0.5">
@@ -131,9 +175,9 @@ export default function ClientMessagesPage() {
                     <div className={`max-w-[70%] p-3 rounded-2xl ${
                       msg.senderId === userId
                         ? 'bg-navy-700 dark:bg-gold-500 text-white dark:text-navy-900'
-                        : 'bg-navy-100 dark:bg-navy-700'
+                        : 'bg-navy-100 dark:bg-navy-700 text-navy-900 dark:text-white'
                     }`}>
-                      <p className="text-sm text-navy-900 dark:text-white">{msg.content}</p>
+                      <p className="text-sm">{msg.content}</p>
                       <p className={`text-xs mt-1 ${msg.senderId === userId ? 'text-white/70 dark:text-navy-700' : 'text-navy-400'}`}>
                         {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         {' · '}
@@ -165,12 +209,59 @@ export default function ClientMessagesPage() {
               <div className="text-center">
                 <MessageSquare className="w-16 h-16 text-navy-300 dark:text-navy-600 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-navy-900 dark:text-white mb-2">Select a conversation</h3>
-                <p className="text-sm text-navy-400">Choose a conversation from the left to view messages</p>
+                <p className="text-sm text-navy-400">Choose a conversation from the left or open a new ticket</p>
               </div>
             </Card>
           )}
         </div>
       </div>
+
+      {/* New Ticket Modal */}
+      {showTicket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowTicket(false)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative bg-white dark:bg-navy-800 rounded-2xl shadow-2xl border border-navy-200 dark:border-navy-700 p-6 w-full max-w-md z-10"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gold-100 dark:bg-gold-900/30 flex items-center justify-center">
+                <Ticket className="w-5 h-5 text-gold-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-serif font-bold text-navy-900 dark:text-white">New Ticket</h2>
+                <p className="text-xs text-navy-400">Our team will respond shortly</p>
+              </div>
+              <button onClick={() => setShowTicket(false)} className="ml-auto p-1 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700">
+                <X className="w-4 h-4 text-navy-400" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={ticketSubject}
+                onChange={(e) => setTicketSubject(e.target.value)}
+                placeholder="Subject *"
+                className="w-full px-3 py-2.5 text-sm rounded-xl border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
+              />
+              <textarea
+                value={ticketMessage}
+                onChange={(e) => setTicketMessage(e.target.value)}
+                placeholder="Describe your issue or question..."
+                rows={4}
+                className="w-full px-3 py-2.5 text-sm rounded-xl border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500 resize-none"
+              />
+              <div className="flex gap-3 justify-end">
+                <Button variant="ghost" onClick={() => setShowTicket(false)}>Cancel</Button>
+                <Button onClick={createTicket} loading={ticketLoading}>
+                  <Send className="w-4 h-4 mr-1" /> Submit Ticket
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

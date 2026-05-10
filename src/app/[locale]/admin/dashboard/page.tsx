@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { TrendingUp, DollarSign, Users, Target, FileText, Loader2, Eye, EyeOff, GripVertical } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { DollarSign, Users, Target, FileText, Loader2, SlidersHorizontal, Check } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { DashboardCharts } from '@/components/charts/dashboard-charts';
 import { AISummary } from '@/components/dashboard/ai-summary';
@@ -22,6 +22,8 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState(defaultSections);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/api/admin/stats')
@@ -29,21 +31,27 @@ export default function AdminDashboardPage() {
       .then(data => {
         if (data.error) { setStats([]); return; }
         setStats([
-          { label: 'admin.revenue', value: data.revenue, change: `${formatCurrency(data.invoiced || 0)} this month`, icon: DollarSign },
-          { label: 'admin.leads', value: data.leads, change: `+${data.newLeads || 0} new this month`, icon: Target },
-          { label: 'admin.clients', value: data.clients, change: 'Active', icon: Users },
-          { label: 'admin.projects', value: data.projects, change: 'Active', icon: FileText },
+          { label: 'Revenue', value: data.revenue, change: `${formatCurrency(data.invoiced || 0)} this month`, icon: DollarSign },
+          { label: 'Leads', value: data.leads, change: `+${data.newLeads || 0} new this month`, icon: Target },
+          { label: 'Clients', value: data.clients, change: 'Active', icon: Users },
+          { label: 'Projects', value: data.projects, change: 'Active', icon: FileText },
         ]);
       })
       .catch(() => setStats([]))
       .finally(() => setLoading(false));
-  }, []);
 
-  useEffect(() => {
     try {
       const saved = localStorage.getItem(SECTIONS_KEY);
       if (saved) setSections(JSON.parse(saved));
     } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const toggleSection = (id: string) => {
@@ -65,22 +73,48 @@ export default function AdminDashboardPage() {
           </h1>
           <p className="text-navy-500 dark:text-navy-400 mt-1">Stats Overview</p>
         </div>
-        <div className="flex items-center gap-2">
-          {sections.map(s => (
-            <button
-              key={s.id}
-              onClick={() => toggleSection(s.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                s.visible
-                  ? 'bg-navy-100 dark:bg-navy-800 border-navy-200 dark:border-navy-600 text-navy-700 dark:text-navy-300'
-                  : 'bg-white dark:bg-navy-900 border-navy-200 dark:border-navy-700 text-navy-400 dark:text-navy-500'
-              }`}
-              title={s.visible ? `Hide ${s.label}` : `Show ${s.label}`}
-            >
-              {s.visible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-              <span className="hidden sm:inline">{s.visible ? 'Hide' : 'Show'}</span>
-            </button>
-          ))}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded-xl border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-navy-700 dark:text-navy-300 hover:bg-navy-50 dark:hover:bg-navy-700 transition-colors"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            <span className="hidden sm:inline">Layout</span>
+          </button>
+          <AnimatePresence>
+            {menuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -5, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -5, scale: 0.95 }}
+                className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-navy-800 rounded-2xl shadow-2xl border border-navy-100 dark:border-navy-700 z-50 overflow-hidden origin-top-right"
+              >
+                <div className="px-4 py-3 border-b border-navy-100 dark:border-navy-700">
+                  <p className="text-xs font-semibold text-navy-500 dark:text-navy-400 uppercase tracking-wider">Dashboard Sections</p>
+                </div>
+                <div className="p-2 space-y-1">
+                  {sections.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => toggleSection(s.id)}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-navy-50 dark:hover:bg-navy-700/50 transition-colors group"
+                    >
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
+                        s.visible
+                          ? 'bg-gold-500 border-gold-500'
+                          : 'border-navy-300 dark:border-navy-500 group-hover:border-gold-400'
+                      }`}>
+                        {s.visible && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                      <span className={`text-sm ${s.visible ? 'text-navy-900 dark:text-white font-medium' : 'text-navy-400 dark:text-navy-500'}`}>
+                        {s.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -103,9 +137,9 @@ export default function AdminDashboardPage() {
                   <span className="text-xs font-medium text-navy-400">{stat.change}</span>
                 </div>
                 <p className="text-2xl font-bold font-serif text-navy-900 dark:text-white">
-                  {stat.label === 'admin.revenue' ? formatCurrency(stat.value) : stat.value}
+                  {stat.label === 'Revenue' ? formatCurrency(stat.value) : stat.value}
                 </p>
-                <p className="text-xs text-navy-400 mt-1">{stat.label === 'admin.revenue' ? 'Revenue' : stat.label === 'admin.leads' ? 'Leads' : stat.label === 'admin.clients' ? 'Clients' : 'Projects'}</p>
+                <p className="text-xs text-navy-400 mt-1">{stat.label}</p>
               </Card>
             </motion.div>
           ))}
