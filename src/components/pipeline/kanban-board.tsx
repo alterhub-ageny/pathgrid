@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import type { LeadStage } from '@/types';
 
 export function KanbanBoard({ editId }: { editId?: string }) {
-  const { t, isRtl } = useTranslation();
+  const { t, isRtl, locale } = useTranslation();
   const [stages, setStages] = useState<{ key: string; label: string; color: string }[]>([]);
   const [leads, setLeads] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
@@ -135,7 +135,7 @@ export function KanbanBoard({ editId }: { editId?: string }) {
           <Target className="w-16 h-16 text-navy-300 dark:text-navy-600 mb-4" />
           <h3 className="text-lg font-semibold text-navy-900 dark:text-white mb-2">No stages configured</h3>
           <p className="text-sm text-navy-400 dark:text-navy-200 mb-4">Add pipeline stages first to start managing leads.</p>
-          <a href={`/en/admin/pipeline-stages`} className="inline-flex items-center gap-2 px-4 py-2.5 bg-navy-700 dark:bg-gold-500 text-white dark:text-navy-900 rounded-xl text-sm font-medium hover:bg-navy-800 dark:hover:bg-gold-400 transition-colors">
+           <a href={`/${locale}/admin/pipeline-stages`} className="inline-flex items-center gap-2 px-4 py-2.5 bg-navy-700 dark:bg-gold-500 text-white dark:text-navy-900 rounded-xl text-sm font-medium hover:bg-navy-800 dark:hover:bg-gold-400 transition-colors">
             <Plus className="w-4 h-4" /> Manage Stages
           </a>
         </div>
@@ -157,7 +157,7 @@ export function KanbanBoard({ editId }: { editId?: string }) {
               <div className="flex items-center justify-between mb-3 px-2">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: stage.color }} />
-                  <h3 className="text-sm font-semibold text-navy-700 dark:text-navy-200">{t(stage.label) || stage.label}</h3>
+                  <h3 className="text-sm font-semibold text-navy-700 dark:text-navy-200">{stage.label}</h3>
                   <span className="text-xs text-navy-400 dark:text-navy-200 bg-navy-100 dark:bg-navy-700 px-1.5 py-0.5 rounded-full">{stageLeads.length}</span>
                 </div>
               </div>
@@ -240,7 +240,7 @@ export function KanbanBoard({ editId }: { editId?: string }) {
                   <span className="inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full mt-1 bg-navy-100 dark:bg-navy-700"
                     style={{ color: stages.find(s => s.key === detailModal.stage)?.color }}>
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: stages.find(s => s.key === detailModal.stage)?.color }} />
-                    {t(`pipeline.${detailModal.stage}`) || detailModal.stage}
+                    {stages.find(s => s.key === detailModal.stage)?.label || t(`pipeline.${detailModal.stage}`) || detailModal.stage}
                   </span>
                 </div>
               )}
@@ -314,7 +314,7 @@ export function KanbanBoard({ editId }: { editId?: string }) {
               <select name="stage" defaultValue={editingLead.stage}
                 className="w-full px-4 py-2.5 rounded-lg border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-navy-500">
                 {stages.map((s) => (
-                  <option key={s.key} value={s.key}>{t(s.label) || s.label}</option>
+                  <option key={s.key} value={s.key}>{s.label}</option>
                 ))}
               </select>
             </div>
