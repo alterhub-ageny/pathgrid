@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare, Send, User, Plus, Search, Loader2, Trash2, Mail, Phone, Building2,
-  Check, CheckCheck, Clock, X, ChevronLeft, Paperclip, Smile, MoreVertical
+  CheckCheck, Clock, X, ChevronLeft, Smile, Archive, RotateCcw, Info
 } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,14 @@ function getAvatarColor(id: string) {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
+type FilterTab = 'active' | 'archived' | 'trash';
+
+const FILTER_TABS: { key: FilterTab; label: string }[] = [
+  { key: 'active', label: 'Active' },
+  { key: 'archived', label: 'Archived' },
+  { key: 'trash', label: 'Trash' },
+];
+
 export default function AdminMessagesPage() {
   const { t } = useTranslation();
   const { data: session } = useSession();
@@ -62,14 +70,15 @@ export default function AdminMessagesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [showMobileList, setShowMobileList] = useState(true);
+  const [filter, setFilter] = useState<FilterTab>('active');
 
   const fetchConversations = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/messages');
+      const res = await fetch(`/api/admin/messages?filter=${filter}`);
       const data = await res.json();
       if (Array.isArray(data)) setConversations(data);
     } catch { /* silent */ }
-  }, []);
+  }, [filter]);
 
   const fetchMessages = useCallback(async (convId: string) => {
     try {
@@ -77,7 +86,6 @@ export default function AdminMessagesPage() {
       const data = await res.json();
       if (Array.isArray(data)) {
         setMessages(data);
-        // Mark as read
         fetch('/api/admin/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -101,7 +109,6 @@ export default function AdminMessagesPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Real-time polling every 2s
   useEffect(() => {
     const interval = setInterval(() => {
       if (activeConv) fetchMessages(activeConv);
@@ -169,7 +176,50 @@ export default function AdminMessagesPage() {
     }
   };
 
-  const deleteConversation = async (convId: string) => {
+  const deleteMessage = async (msgId: string) => {
+    try {
+      const res = await fetch('/api/admin/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete-message', data: { messageId: msgId } }),
+      });
+      if (res.ok) {
+        setMessages(prev => prev.filter(m => m.id !== msgId));
+        toast.success('Message deleted');
+      }
+    } catch { /* silent */ }
+  };
+
+  const archiveConversation = async (convId: string) => {
+    try {
+      const res = await fetch('/api/admin/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'archive-conversation', data: { conversationId: convId } }),
+      });
+      if (res.ok) {
+        if (activeConv === convId) { setActiveConv(null); setMessages([]); setShowMobileList(true); }
+        fetchConversations();
+        toast.success('Conversation archived');
+      }
+    } catch { /* silent */ }
+  };
+
+  const unarchiveConversation = async (convId: string) => {
+    try {
+      const res = await fetch('/api/admin/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'unarchive-conversation', data: { conversationId: convId } }),
+      });
+      if (res.ok) {
+        fetchConversations();
+        toast.success('Conversation restored');
+      }
+    } catch { /* silent */ }
+  };
+
+  const softDeleteConversation = async (convId: string) => {
     try {
       const res = await fetch('/api/admin/data', {
         method: 'POST',
@@ -184,6 +234,20 @@ export default function AdminMessagesPage() {
     } catch { /* silent */ }
   };
 
+  const restoreConversation = async (convId: string) => {
+    try {
+      const res = await fetch('/api/admin/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'conversations', action: 'restore', data: { id: convId } }),
+      });
+      if (res.ok) {
+        fetchConversations();
+        toast.success('Conversation restored');
+      }
+    } catch { /* silent */ }
+  };
+
   const filtered = conversations.filter((c) =>
     c.client?.name?.toLowerCase().includes(search.toLowerCase()) ||
     c.client?.email?.toLowerCase().includes(search.toLowerCase()) ||
@@ -191,7 +255,6 @@ export default function AdminMessagesPage() {
   );
 
   const userId = (session?.user as any)?.id;
-
   const activeConversation = conversations.find((c) => c.id === activeConv);
 
   return (
@@ -203,9 +266,28 @@ export default function AdminMessagesPage() {
           </h1>
           <p className="text-navy-500 dark:text-navy-400 mt-1">Manage client conversations</p>
         </div>
-        <Button onClick={() => setShowNewConv(true)}>
-          <Plus className="w-4 h-4 mr-2" /> New Conversation
-        </Button>
+        {filter === 'active' && (
+          <Button onClick={() => setShowNewConv(true)}>
+            <Plus className="w-4 h-4 mr-2" /> New Conversation
+          </Button>
+        )}
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex gap-1 bg-navy-50 dark:bg-navy-800/50 p-1 rounded-xl w-fit">
+        {FILTER_TABS.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => { setFilter(tab.key); setActiveConv(null); setShowMobileList(true); }}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+              filter === tab.key
+                ? 'bg-white dark:bg-navy-700 text-navy-900 dark:text-white shadow-sm'
+                : 'text-navy-500 dark:text-navy-400 hover:text-navy-700 dark:hover:text-navy-200'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -219,14 +301,12 @@ export default function AdminMessagesPage() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search conversations..."
+                  placeholder="Search..."
                   className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 focus:outline-none focus:ring-2 focus:ring-navy-500 text-navy-900 dark:text-white placeholder:text-navy-400"
                 />
               </div>
               <div className="flex items-center gap-2 mt-2 text-xs text-navy-400">
                 <span className="font-medium">{conversations.length} conversations</span>
-                <span>·</span>
-                <span>{conversations.filter(c => (c._count?.messages || 0) > 0).length} active</span>
               </div>
             </div>
             <div className="divide-y divide-navy-100 dark:divide-navy-700 max-h-[600px] overflow-y-auto custom-scrollbar">
@@ -235,7 +315,9 @@ export default function AdminMessagesPage() {
               ) : filtered.length === 0 ? (
                 <div className="text-center py-12 px-4">
                   <MessageSquare className="w-10 h-10 text-navy-300 dark:text-navy-600 mx-auto mb-3" />
-                  <p className="text-sm text-navy-400 dark:text-navy-500">No conversations found</p>
+                  <p className="text-sm text-navy-400 dark:text-navy-500">
+                    {filter === 'archived' ? 'No archived conversations' : filter === 'trash' ? 'Trash is empty' : 'No conversations found'}
+                  </p>
                 </div>
               ) : (
                 filtered.map((conv) => {
@@ -273,20 +355,55 @@ export default function AdminMessagesPage() {
                                 {unread}
                               </span>
                             )}
-                            {conv.client?.company && (
-                              <span className="text-[10px] text-navy-400 dark:text-navy-500 flex items-center gap-1">
-                                <Building2 className="w-3 h-3" />
-                                {conv.client.company}
+                            {conv.archived && (
+                              <span className="flex items-center gap-0.5 text-[10px] text-navy-400 dark:text-navy-500">
+                                <Archive className="w-3 h-3" /> Archived
+                              </span>
+                            )}
+                            {conv.deletedAt && (
+                              <span className="flex items-center gap-0.5 text-[10px] text-red-400">
+                                <Trash2 className="w-3 h-3" /> Trashed
                               </span>
                             )}
                           </div>
                         </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
-                          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 text-navy-400 hover:text-red-500 transition-all shrink-0"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                          {filter === 'active' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); archiveConversation(conv.id); }}
+                              className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 text-navy-400 hover:text-gold-500 transition-colors"
+                              title="Archive"
+                            >
+                              <Archive className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {filter === 'archived' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); unarchiveConversation(conv.id); }}
+                              className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 text-navy-400 hover:text-green-500 transition-colors"
+                              title="Unarchive"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {filter !== 'trash' ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); softDeleteConversation(conv.id); }}
+                              className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-navy-400 hover:text-red-500 transition-colors"
+                              title="Move to trash"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); restoreConversation(conv.id); }}
+                              className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 text-navy-400 hover:text-green-500 transition-colors"
+                              title="Restore"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </button>
                   );
@@ -336,6 +453,12 @@ export default function AdminMessagesPage() {
                         {activeConversation.project.title}
                       </span>
                     )}
+                    {filter !== 'active' && (
+                      <span className="flex items-center gap-1.5 bg-navy-50 dark:bg-navy-800 px-2.5 py-1 rounded-full">
+                        <Info className="w-3 h-3" />
+                        {filter === 'archived' ? 'Archived' : 'Trash'}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -360,7 +483,7 @@ export default function AdminMessagesPage() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2 }}
-                        className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${isFirst ? 'mt-3' : ''}`}
+                        className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${isFirst ? 'mt-3' : ''} group`}
                       >
                         <div className={`flex items-end gap-2 max-w-[75%] ${isMe ? 'flex-row-reverse' : ''}`}>
                           {!isMe && isLast && (
@@ -371,15 +494,23 @@ export default function AdminMessagesPage() {
                             </div>
                           )}
                           {!isMe && !isLast && <div className="w-7 shrink-0" />}
-                          <div className="space-y-1">
+                          <div className="space-y-1 relative">
                             <div className={`relative ${
                               isMe
                                 ? 'bg-gradient-to-br from-navy-700 to-navy-800 dark:from-gold-500 dark:to-gold-600 text-white dark:text-navy-900 shadow-md'
                                 : 'bg-white dark:bg-navy-800 text-navy-900 dark:text-white border border-navy-100 dark:border-navy-700 shadow-sm'
                             } ${isLast ? (isMe ? 'rounded-2xl rounded-br-sm' : 'rounded-2xl rounded-bl-sm') : 'rounded-2xl'}`}>
-                              <div className="px-4 py-2.5">
+                              <div className="px-4 py-2.5 pr-8">
                                 <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
                               </div>
+                              {/* Message delete button */}
+                              <button
+                                onClick={() => deleteMessage(msg.id)}
+                                className="absolute top-1.5 right-1.5 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10 text-white/60 dark:text-navy-400 hover:text-red-400 transition-all"
+                                title="Delete message"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
                             </div>
                             <div className={`flex items-center gap-1.5 ${isMe ? 'justify-end' : 'justify-start'} px-1`}>
                               <span className="text-[10px] text-navy-400 dark:text-navy-500">

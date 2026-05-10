@@ -24,10 +24,11 @@ const models: Record<string, any> = {
   activities: prisma.activity,
   projects: prisma.project,
   stages: prisma.pipelineStage,
+  conversations: prisma.conversation,
 };
 
 const softDeleteModels = new Set([
-  'invoices', 'leads', 'notes', 'tasks', 'calendar-events', 'transactions', 'projects', 'clients'
+  'invoices', 'leads', 'notes', 'tasks', 'calendar-events', 'transactions', 'projects', 'clients', 'conversations'
 ]);
 
 export async function GET(request: Request) {

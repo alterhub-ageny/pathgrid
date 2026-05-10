@@ -294,6 +294,7 @@ model Conversation {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+  archived  Boolean   @default(false)
   messages  Message[]
   client    User      @relation("ClientConversations", fields: [clientId], references: [id])
   project   Project?  @relation(fields: [projectId], references: [id])

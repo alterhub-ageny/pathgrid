@@ -329,35 +329,40 @@ export function ChatBot() {
                         </p>
                       </div>
                     )}
-                    {messages.map((msg, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-3`}
-                      >
-                        <div className={`flex items-start gap-2 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                          <span className={`p-1.5 rounded-full shrink-0 ${
-                            msg.role === 'user'
-                              ? 'bg-navy-100 dark:bg-navy-700'
-                              : 'bg-gradient-to-br from-gold-100 to-gold-200 dark:from-gold-900/30 dark:to-gold-800/20'
-                          }`}>
-                            {msg.role === 'user'
-                              ? <User className="w-3.5 h-3.5 text-navy-500" />
-                              : <Bot className="w-3.5 h-3.5 text-gold-600 dark:text-gold-400" />
-                            }
-                          </span>
-                          <div className={`p-3 rounded-2xl text-sm leading-relaxed ${
-                            msg.role === 'user'
-                              ? 'bg-gradient-to-br from-navy-700 to-navy-800 dark:from-gold-500 dark:to-gold-600 text-white dark:text-navy-900 rounded-tr-md shadow-md'
-                              : 'bg-white/60 dark:bg-navy-800/60 backdrop-blur-sm text-navy-900 dark:text-white rounded-tl-md border border-navy-100/50 dark:border-navy-700/50'
-                          }`}>
-                            {msg.content.replace(/\*\*(.*?)\*\*/g, '$1').replace(/#{1,6}\s/g, '').replace(/\*(.*?)\*/g, '$1').replace(/`{1,3}(.*?)`{1,3}/g, '$1')}
+                    {messages.map((msg, i) => {
+                      const isUser = msg.role === 'user';
+                      return (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}
+                        >
+                          <div className={`flex items-start gap-2 max-w-[85%] ${isUser ? 'flex-row-reverse' : ''}`}>
+                            {/* Avatar - different for user vs assistant */}
+                            <div className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center shadow-sm ${
+                              isUser
+                                ? 'bg-navy-200 dark:bg-navy-700'
+                                : 'bg-gradient-to-br from-gold-400 to-amber-500 dark:from-gold-500 dark:to-amber-600'
+                            }`}>
+                              {isUser
+                                ? <User className="w-3.5 h-3.5 text-navy-600 dark:text-navy-300" />
+                                : <Bot className="w-3.5 h-3.5 text-white" />
+                              }
+                            </div>
+                            {/* Bubble */}
+                            <div className={`p-3 text-sm leading-relaxed ${
+                              isUser
+                                ? 'bg-gradient-to-br from-navy-700 to-navy-800 dark:from-gold-500 dark:to-amber-500 text-white dark:text-navy-900 rounded-2xl rounded-br-md shadow-md'
+                                : 'bg-white dark:bg-navy-800 text-navy-900 dark:text-white rounded-2xl rounded-bl-md border-l-2 border-gold-400 dark:border-gold-500 shadow-sm'
+                            }`}>
+                              {msg.content.replace(/\*\*(.*?)\*\*/g, '$1').replace(/#{1,6}\s/g, '').replace(/\*(.*?)\*/g, '$1').replace(/`{1,3}(.*?)`{1,3}/g, '$1')}
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      );
+                    })}
                     {loading && (
                       <div className="flex justify-start mb-3">
                         <div className="flex items-center gap-2.5 p-3 rounded-2xl rounded-tl-md bg-white/60 dark:bg-navy-800/60 backdrop-blur-sm border border-navy-100/50 dark:border-navy-700/50">

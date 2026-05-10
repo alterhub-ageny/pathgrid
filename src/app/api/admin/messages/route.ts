@@ -11,6 +11,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const conversationId = searchParams.get('conversationId');
+  const filter = searchParams.get('filter') || 'active';
   const userId = (session.user as any)?.id;
 
   if (conversationId) {
@@ -22,8 +23,19 @@ export async function GET(request: Request) {
     return NextResponse.json(messages);
   }
 
+  let where: any = {};
+  if (filter === 'archived') {
+    where.archived = true;
+    where.deletedAt = null;
+  } else if (filter === 'trash') {
+    where.deletedAt = { not: null };
+  } else {
+    where.deletedAt = null;
+    where.archived = false;
+  }
+
   const conversations = await prisma.conversation.findMany({
-    where: { deletedAt: null },
+    where,
     orderBy: { lastMessageAt: 'desc' },
     include: {
       client: { select: { id: true, name: true, email: true, company: true } },
@@ -66,6 +78,30 @@ export async function POST(request: Request) {
       await prisma.message.updateMany({
         where: { conversationId: data.conversationId, senderId: { not: userId }, read: false },
         data: { read: true },
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'archive-conversation') {
+      await prisma.conversation.update({
+        where: { id: data.conversationId },
+        data: { archived: true },
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'unarchive-conversation') {
+      await prisma.conversation.update({
+        where: { id: data.conversationId },
+        data: { archived: false },
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'delete-message') {
+      await prisma.message.update({
+        where: { id: data.messageId },
+        data: { deletedAt: new Date() },
       });
       return NextResponse.json({ success: true });
     }
