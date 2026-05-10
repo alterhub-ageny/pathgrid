@@ -26,28 +26,53 @@ You can help with:
 
 Be friendly, professional, and concise. Use markdown for formatting when helpful. If you don't know something, be honest about it. Keep responses under 300 words unless asked for detail.`;
 
+const FALLBACK = `Hello! I'm PathgridAI. I can help you with questions about the Pathgrid Agency platform, digital agency services, project management, and more. To enable full AI capabilities, please configure an AI_API_KEY in your environment variables.
+
+For now, here are some things I can tell you about:
+- **Platform Features**: Admin Dashboard, Client Portal, CRM, Accounting, Blog
+- **Services**: UI/UX Design, Web Development, Digital Strategy, Branding
+- **Tech Stack**: Next.js, TypeScript, Tailwind CSS, PostgreSQL
+
+What would you like to know?`;
+
+const SUMMARY_FALLBACK = `• Dashboard overview ready
+• Check Pipeline for lead status
+• Review Invoices for pending payments
+• Team is active on current projects`;
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
     const { message, sessionId } = await request.json();
     if (!message) return NextResponse.json({ error: 'Message required' }, { status: 400 });
 
     const chatSessionId = sessionId || `session_${Date.now()}`;
 
-    if (AI_API_KEY) {
-      const recent = await prisma.chatMessage.findMany({
-        where: { sessionId: chatSessionId },
-        orderBy: { createdAt: 'asc' },
-        take: 20,
-      });
+    // Dashboard summary special case — returns summary-like fallback when no AI key
+    if (chatSessionId === 'dashboard-summary' && !AI_API_KEY) {
+      return NextResponse.json({ reply: SUMMARY_FALLBACK, sessionId: chatSessionId });
+    }
 
-      const messages = [
+    if (AI_API_KEY) {
+      let messages = [
         { role: 'system', content: SYSTEM_PROMPT },
-        ...recent.map((m: any) => ({ role: m.role, content: m.content })),
         { role: 'user', content: message },
       ];
+
+      if (session) {
+        const recent = await prisma.chatMessage.findMany({
+          where: { sessionId: chatSessionId },
+          orderBy: { createdAt: 'asc' },
+          take: 20,
+        });
+        if (recent.length > 0) {
+          messages = [
+            { role: 'system', content: SYSTEM_PROMPT },
+            ...recent.map((m: any) => ({ role: m.role, content: m.content })),
+            { role: 'user', content: message },
+          ];
+        }
+      }
 
       const res = await fetch(AI_API_ENDPOINT, {
         method: 'POST',
@@ -66,33 +91,29 @@ export async function POST(request: Request) {
       const data = await res.json();
       const reply = data.choices?.[0]?.message?.content || 'No response';
 
-      await prisma.chatMessage.createMany({
-        data: [
-          { sessionId: chatSessionId, role: 'user', content: message },
-          { sessionId: chatSessionId, role: 'assistant', content: reply },
-        ],
-      });
+      if (session) {
+        await prisma.chatMessage.createMany({
+          data: [
+            { sessionId: chatSessionId, role: 'user', content: message },
+            { sessionId: chatSessionId, role: 'assistant', content: reply },
+          ],
+        });
+      }
 
       return NextResponse.json({ reply, sessionId: chatSessionId });
     }
 
-    const fallback = `Hello! I'm PathgridAI. I can help you with questions about the Pathgrid Agency platform, digital agency services, project management, and more. To enable full AI capabilities, please configure an AI_API_KEY in your environment variables.
+    // No AI key — return fallback (only save to DB if authenticated)
+    if (session) {
+      await prisma.chatMessage.createMany({
+        data: [
+          { sessionId: chatSessionId, role: 'user', content: message },
+          { sessionId: chatSessionId, role: 'assistant', content: FALLBACK },
+        ],
+      });
+    }
 
-For now, here are some things I can tell you about:
-- **Platform Features**: Admin Dashboard, Client Portal, CRM, Accounting, Blog
-- **Services**: UI/UX Design, Web Development, Digital Strategy, Branding
-- **Tech Stack**: Next.js, TypeScript, Tailwind CSS, PostgreSQL
-
-What would you like to know?`;
-
-    await prisma.chatMessage.createMany({
-      data: [
-        { sessionId: chatSessionId, role: 'user', content: message },
-        { sessionId: chatSessionId, role: 'assistant', content: fallback },
-      ],
-    });
-
-    return NextResponse.json({ reply: fallback, sessionId: chatSessionId });
+    return NextResponse.json({ reply: FALLBACK, sessionId: chatSessionId });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Chat failed' }, { status: 500 });
   }

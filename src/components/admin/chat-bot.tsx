@@ -21,6 +21,7 @@ export function ChatBot() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [authError, setAuthError] = useState(false);
 
   const isAuthenticated = !!session;
 
@@ -41,6 +42,7 @@ export function ChatBot() {
     setInput('');
     setMessages((prev) => [...prev, { role: 'user', content: text }]);
     setLoading(true);
+    setAuthError(false);
 
     try {
       const res = await fetch('/api/chat', {
@@ -49,7 +51,10 @@ export function ChatBot() {
         body: JSON.stringify({ message: text, sessionId }),
       });
       const json = await res.json();
-      if (json.reply) {
+      if (res.status === 401) {
+        setAuthError(true);
+        setMessages((prev) => [...prev, { role: 'assistant', content: 'Please log in to use the chat.' }]);
+      } else if (json.reply) {
         setMessages((prev) => [...prev, { role: 'assistant', content: json.reply }]);
         if (json.sessionId) setSessionId(json.sessionId);
       } else {
@@ -68,8 +73,6 @@ export function ChatBot() {
       handleSend();
     }
   };
-
-  if (!isAuthenticated) return null;
 
   return (
     <>

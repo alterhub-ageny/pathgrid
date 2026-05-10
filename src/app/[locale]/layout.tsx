@@ -31,7 +31,7 @@ export default function LocaleLayout({ children }: { children: React.ReactNode }
   const isAdmin = pathname?.includes('/admin/') || pathname?.endsWith('/admin');
   const isClientPortal = pathname?.includes('/client-portal/') || pathname?.endsWith('/client-portal');
   const isAuth = pathname?.includes('/auth/');
-  const showChat = isAdmin || isClientPortal;
+  const showChat = !isAdmin && !isAuth;
 
   useEffect(() => {
     setLocale(locale);

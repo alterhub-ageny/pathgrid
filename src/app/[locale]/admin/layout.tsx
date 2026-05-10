@@ -37,6 +37,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
+  const role = (session?.user as any)?.role;
+
+  // Client should never see admin layout — redirect before rendering
+  if (role === 'client') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-navy-300 border-t-navy-700 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   if (!session) return null;
 
   return (
