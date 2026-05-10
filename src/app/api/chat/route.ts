@@ -94,15 +94,13 @@ export async function POST(request: Request) {
 
       try {
         const now = new Date();
-        const [conversation] = await prisma.$transaction([
-          prisma.conversation.create({
-            data: {
-              subject: subject || 'Chat Handoff: ' + (name || email || 'Visitor'),
-              clientId,
-              lastMessageAt: now,
-            },
-          }),
-        ]);
+        const conversation = await prisma.conversation.create({
+          data: {
+            subject: subject || 'Chat Handoff: ' + (name || email || 'Visitor'),
+            clientId,
+            lastMessageAt: now,
+          },
+        });
 
         await prisma.message.create({
           data: {
@@ -112,15 +110,14 @@ export async function POST(request: Request) {
           },
         });
 
-        // Notify admins
         const admins = await prisma.user.findMany({ where: { role: { in: ['admin', 'staff'] } } });
         for (const admin of admins) {
           await prisma.notification.create({
             data: {
               userId: admin.id,
               type: 'info',
-              title: 'New chat handoff request',
-              message: `${name || email || 'A visitor'} wants to talk to a human`,
+              title: 'New handoff: ' + (name || email || 'Visitor'),
+              message: message || 'Wants to talk to a human',
               link: `/${admin.locale || 'en'}/admin/messages`,
             },
           });

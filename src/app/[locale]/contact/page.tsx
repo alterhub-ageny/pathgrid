@@ -7,6 +7,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { useAppStore } from '@/store/app-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 export default function ContactPage() {
   const { t, locale } = useTranslation();
@@ -29,8 +30,12 @@ export default function ContactPage() {
       if (res.ok) {
         setSubmitted(true);
         form.reset();
+      } else {
+        const json = await res.json().catch(() => ({}));
+        toast.error(json.message || 'Failed to send message');
       }
     } catch (err) {
+      toast.error('Network error. Please try again.');
       console.error(err);
     } finally {
       setLoading(false);

@@ -20,16 +20,13 @@ export async function POST(request: Request) {
     const now = new Date();
     const msgBody = `From: ${name} (${email})${company ? `\nCompany: ${company}` : ''}${subject ? `\nSubject: ${subject}` : ''}\n\n${message}`;
 
-    // Use a transaction to ensure atomicity
-    const [conversation] = await prisma.$transaction([
-      prisma.conversation.create({
-        data: {
-          subject: subject || `Contact Form: ${name}`,
-          clientId: client.id,
-          lastMessageAt: now,
-        },
-      }),
-    ]);
+    const conversation = await prisma.conversation.create({
+      data: {
+        subject: subject || `Contact Form: ${name}`,
+        clientId: client.id,
+        lastMessageAt: now,
+      },
+    });
 
     await prisma.message.create({
       data: {
@@ -39,15 +36,14 @@ export async function POST(request: Request) {
       },
     });
 
-    // Notify all admins and staff
     const admins = await prisma.user.findMany({ where: { role: { in: ['admin', 'staff'] } } });
     for (const admin of admins) {
       await prisma.notification.create({
         data: {
           userId: admin.id,
           type: 'info',
-          title: 'New contact form message',
-          message: `${name} sent a message: ${subject || 'No subject'}`,
+          title: 'New message from ' + name,
+          message: subject || 'Contact form submission',
           link: `/${admin.locale || 'en'}/admin/messages`,
         },
       });
