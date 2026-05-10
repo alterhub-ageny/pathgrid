@@ -20,7 +20,7 @@ const stages: { key: LeadStage; label: string }[] = [
   { key: 'lost', label: 'pipeline.lost' },
 ];
 
-export function KanbanBoard() {
+export function KanbanBoard({ editId }: { editId?: string }) {
   const { t, isRtl } = useTranslation();
   const [leads, setLeads] = useState<Record<LeadStage, any[]>>({
     cold: [], contacted: [], meeting: [], proposal: [], won: [], lost: [],
@@ -55,6 +55,18 @@ export function KanbanBoard() {
   }, []);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
+
+  // Auto-open detail/edit modal from ?edit= URL param
+  useEffect(() => {
+    if (!editId || !Object.values(leads).some((arr) => arr.length > 0)) return;
+    for (const stage of Object.keys(leads) as LeadStage[]) {
+      const found = leads[stage].find((l: any) => l.id === editId);
+      if (found) {
+        setDetailModal({ lead: found, stage });
+        return;
+      }
+    }
+  }, [editId, leads]);
 
   const handleDragStart = (lead: any, stage: LeadStage) => {
     setDraggedLead({ lead, stage });

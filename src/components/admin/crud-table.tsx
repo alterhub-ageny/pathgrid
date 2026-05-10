@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Plus, Search, Edit2, Trash2, Upload, Loader2, Download, FileUp, Wand2, CheckSquare, Square, Trash } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
@@ -39,6 +40,7 @@ interface CrudTableProps {
 
 export function CrudTable({ title, subtitle, columns, data: initialData, type, formFields }: CrudTableProps) {
   const { t } = useTranslation();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState<{ open: boolean; edit?: any }>({ open: false });
   const [data, setData] = useState<any[]>(initialData || []);
@@ -104,6 +106,15 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
       setRichtextValues((prev) => ({ ...prev, ...vals }));
     }
   }, [modal.edit, modal.open, formFields]);
+
+  // Open edit modal from ?edit= URL param
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (editId && data.length > 0 && !modal.open) {
+      const row = data.find((r: any) => r.id === editId);
+      if (row) setModal({ open: true, edit: row });
+    }
+  }, [searchParams, data, modal.open]);
 
   const filtered = data.filter((row) =>
     Object.values(row).some((v) => String(v).toLowerCase().includes(search.toLowerCase()))

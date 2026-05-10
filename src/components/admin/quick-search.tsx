@@ -1,16 +1,24 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Loader2, Users, Target, FileText, StickyNote, DollarSign, UserCog } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+const typeToRoute: Record<string, string> = {
+  leads: '/admin/pipeline',
+  clients: '/admin/clients',
+  invoices: '/admin/invoices',
+  notes: '/admin/notes',
+  tasks: '/admin/dashboard',
+};
+
 const searchTypes = [
-  { key: 'leads', icon: Target, href: '/admin/pipeline', label: 'Leads' },
-  { key: 'clients', icon: Users, href: '/admin/clients', label: 'Clients' },
-  { key: 'invoices', icon: DollarSign, href: '/admin/invoices', label: 'Invoices' },
-  { key: 'notes', icon: StickyNote, href: '/admin/notes', label: 'Notes' },
-  { key: 'tasks', icon: FileText, href: '/admin/dashboard', label: 'Tasks' },
+  { key: 'leads', icon: Target, label: 'Leads' },
+  { key: 'clients', icon: Users, label: 'Clients' },
+  { key: 'invoices', icon: DollarSign, label: 'Invoices' },
+  { key: 'notes', icon: StickyNote, label: 'Notes' },
+  { key: 'tasks', icon: FileText, label: 'Tasks' },
 ];
 
 export function QuickSearch({ locale }: { locale: string }) {
@@ -72,7 +80,8 @@ export function QuickSearch({ locale }: { locale: string }) {
 
   const handleSelect = (type: string, id: string) => {
     setOpen(false);
-    router.push(`/${locale}/admin/${type}?edit=${id}`);
+    const route = typeToRoute[type] || `/admin/${type}`;
+    router.push(`/${locale}${route}?edit=${id}`);
   };
 
   const totalResults = Object.values(results).reduce((s, arr) => s + arr.length, 0);
