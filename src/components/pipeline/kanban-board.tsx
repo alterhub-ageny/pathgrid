@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, GripVertical, Calendar, Trash2, Edit2, Save, X } from 'lucide-react';
+import { Plus, GripVertical, Calendar, Trash2, Edit2, Save, X, Target } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 import { cn, formatCurrency, formatDateShort } from '@/lib/utils';
 import { Modal } from '@/components/ui/modal';
@@ -11,18 +11,9 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import type { LeadStage } from '@/types';
 
-const DEFAULT_STAGES = [
-  { key: 'cold', label: 'pipeline.cold', color: '#3b82f6' },
-  { key: 'contacted', label: 'pipeline.contacted', color: '#eab308' },
-  { key: 'meeting', label: 'pipeline.meeting', color: '#a855f7' },
-  { key: 'proposal', label: 'pipeline.proposal', color: '#f97316' },
-  { key: 'won', label: 'pipeline.won', color: '#22c55e' },
-  { key: 'lost', label: 'pipeline.lost', color: '#ef4444' },
-];
-
 export function KanbanBoard({ editId }: { editId?: string }) {
   const { t, isRtl } = useTranslation();
-  const [stages, setStages] = useState<{ key: string; label: string; color: string }[]>(DEFAULT_STAGES);
+  const [stages, setStages] = useState<{ key: string; label: string; color: string }[]>([]);
   const [leads, setLeads] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
@@ -139,6 +130,16 @@ export function KanbanBoard({ editId }: { editId?: string }) {
         </button>
       </div>
 
+      {stages.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Target className="w-16 h-16 text-navy-300 dark:text-navy-600 mb-4" />
+          <h3 className="text-lg font-semibold text-navy-900 dark:text-white mb-2">No stages configured</h3>
+          <p className="text-sm text-navy-400 dark:text-navy-200 mb-4">Add pipeline stages first to start managing leads.</p>
+          <a href={`/en/admin/pipeline-stages`} className="inline-flex items-center gap-2 px-4 py-2.5 bg-navy-700 dark:bg-gold-500 text-white dark:text-navy-900 rounded-xl text-sm font-medium hover:bg-navy-800 dark:hover:bg-gold-400 transition-colors">
+            <Plus className="w-4 h-4" /> Manage Stages
+          </a>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {stages.map((stage) => {
           const stageLeads = leads[stage.key] || [];
@@ -217,7 +218,7 @@ export function KanbanBoard({ editId }: { editId?: string }) {
           );
         })}
       </div>
-
+      )}
       <Modal open={addModal} onClose={() => setAddModal(false)} title={t('pipeline.addLead')}>
         <form onSubmit={addLead} className="space-y-4">
           <Input name="name" label="Name" required />
