@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
 const SETTING_KEYS = [
-  'siteName', 'tagline', 'email', 'phone', 'address',
+  'siteName', 'tagline', 'email', 'phone', 'address', 'whatsapp',
   'twitter', 'linkedin', 'dribbble',
 ];
 
@@ -95,6 +95,7 @@ export default function AdminSettingsPage() {
             <Input name="email" label="Contact Email" defaultValue={getSetting('email', 'hello@pathgrid.agency')} type="email" />
             <Input name="phone" label="Phone" defaultValue={getSetting('phone', '+1 (555) 123-4567')} />
             <Input name="address" label="Address" defaultValue={getSetting('address', 'San Francisco, CA')} />
+            <Input name="whatsapp" label="WhatsApp Number" defaultValue={getSetting('whatsapp', '')} placeholder="+212600000000" />
             <div>
               <label className="block text-sm font-medium text-navy-700 dark:text-white mb-1.5">Theme</label>
               <div className="flex gap-3">
