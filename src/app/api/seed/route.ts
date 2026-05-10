@@ -37,6 +37,19 @@ export async function POST() {
       await prisma.service.upsert({ where: { slug: s.slug }, update: {}, create: s });
     }
 
+    const stages = [
+      { key: 'cold', label: 'Cold', color: '#3b82f6', order: 1 },
+      { key: 'contacted', label: 'Contacted', color: '#eab308', order: 2 },
+      { key: 'meeting', label: 'Meeting', color: '#a855f7', order: 3 },
+      { key: 'proposal', label: 'Proposal', color: '#f97316', order: 4 },
+      { key: 'won', label: 'Won', color: '#22c55e', order: 5 },
+      { key: 'lost', label: 'Lost', color: '#ef4444', order: 6 },
+    ];
+
+    for (const s of stages) {
+      await prisma.pipelineStage.upsert({ where: { key: s.key }, update: {}, create: s });
+    }
+
     const leads = [
       { name: 'Sarah Johnson', email: 'sarah@techcorp.com', company: 'TechCorp', stage: 'cold', score: 65, value: 50000 },
       { name: 'Emma Williams', email: 'emma@greenleaf.com', company: 'GreenLeaf', stage: 'contacted', score: 78, value: 75000 },
