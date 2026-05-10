@@ -27,6 +27,7 @@ model User {
   sessions      Session[]
   projects      Project[]
   messages      Message[]
+  clientConversations Conversation[] @relation("ClientConversations")
   invoices      Invoice[]
   activities    Activity[]
 }
@@ -216,9 +217,12 @@ model Project {
   progress    Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
   client      User     @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  messages    Message[]
+  conversations Conversation[]
   assets      Asset[]
+
+  @@index([deletedAt])
 }
 
 model Invoice {
@@ -234,19 +238,25 @@ model Invoice {
   paidAt      DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
   client      User      @relation(fields: [clientId], references: [id])
   items       InvoiceItem[]
   transactions Transaction[]
+
+  @@index([deletedAt])
 }
 
 model InvoiceItem {
-  id        String  @id @default(uuid())
+  id        String   @id @default(uuid())
   invoiceId String
   label     String
-  quantity  Float   @default(1)
+  quantity  Float    @default(1)
   rate      Float
   amount    Float
-  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  deletedAt DateTime?
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([deletedAt])
 }
 
 model Transaction {
@@ -258,18 +268,44 @@ model Transaction {
   category  String?
   date      DateTime @default(now())
   note      String?
+  deletedAt DateTime?
   invoice   Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@index([deletedAt])
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  subject   String?
+  clientId  String
+  adminId   String?
+  projectId String?
+  lastMessageAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  messages  Message[]
+  client    User      @relation("ClientConversations", fields: [clientId], references: [id])
+  project   Project?  @relation(fields: [projectId], references: [id])
+
+  @@index([clientId])
+  @@index([adminId])
+  @@index([deletedAt])
 }
 
 model Message {
-  id        String   @id @default(uuid())
-  content   String
-  senderId  String
-  projectId String?
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  sender    User     @relation(fields: [senderId], references: [id])
-  project   Project? @relation(fields: [projectId], references: [id])
+  id             String       @id @default(uuid())
+  content        String
+  senderId       String
+  conversationId String
+  read           Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  deletedAt      DateTime?
+  sender         User         @relation(fields: [senderId], references: [id])
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([deletedAt])
 }
 
 model Asset {
@@ -302,8 +338,11 @@ model Lead {
   convertedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
   interactions LeadInteraction[]
   tasks       LeadTask[]
+
+  @@index([deletedAt])
 }
 
 model LeadInteraction {
@@ -354,7 +393,10 @@ model Task {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  deletedAt DateTime?
+
   @@index([status])
+  @@index([deletedAt])
 }
 
 model CalendarEvent {
@@ -367,6 +409,9 @@ model CalendarEvent {
   userId    String?
   type      String   @default("general")
   createdAt DateTime @default(now())
+  deletedAt DateTime?
+
+  @@index([deletedAt])
 }
 
 model Notification {
@@ -390,8 +435,10 @@ model Note {
   pinned    Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 
   @@index([category])
+  @@index([deletedAt])
 }
 
 model ChatMessage {

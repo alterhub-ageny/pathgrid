@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Briefcase, Image, FileText, Users, MessageSquare,
   DollarSign, TrendingUp, Calendar, UserCog, Settings, X, ChevronLeft,
-  Target, BarChart3, StickyNote, FolderKanban, Shield
+  Target, BarChart3, StickyNote, FolderKanban, Shield, Trash2, Mail
 } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
 import { useTranslation } from '@/hooks/use-translation';
@@ -20,6 +20,7 @@ const navItems = [
   { label: 'admin.blog', href: '/admin/blog', icon: FileText, roles: ['admin', 'staff'] },
   { label: 'admin.team', href: '/admin/team', icon: Users, roles: ['admin', 'staff'] },
   { label: 'admin.testimonials', href: '/admin/testimonials', icon: MessageSquare, roles: ['admin', 'staff'] },
+  { label: 'admin.messages', href: '/admin/messages', icon: Mail, roles: ['admin', 'staff'] },
   { label: 'admin.clients', href: '/admin/clients', icon: Users, roles: ['admin'] },
   { label: 'admin.pipeline', href: '/admin/pipeline', icon: Target, roles: ['admin', 'staff'] },
   { label: 'admin.accounting', href: '/admin/accounting', icon: BarChart3, roles: ['admin'] },
@@ -31,6 +32,7 @@ const navItems = [
   { label: 'admin.notes', href: '/admin/notes', icon: StickyNote, roles: ['admin', 'staff'] },
   { label: 'admin.security', href: '/admin/security', icon: Shield, roles: ['admin'] },
   { label: 'admin.settings', href: '/admin/settings', icon: Settings, roles: ['admin'] },
+  { label: 'admin.trash', href: '/admin/trash', icon: Trash2, roles: ['admin', 'staff'] },
 ];
 
 export function AdminSidebar() {

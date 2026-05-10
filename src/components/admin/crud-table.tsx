@@ -408,8 +408,8 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold">{title}</h1>
-          {subtitle && <p className="text-navy-500 dark:text-navy-400 mt-1 text-sm">{subtitle}</p>}
+          <h1 className="text-3xl font-serif font-bold text-navy-900 dark:text-white">{title}</h1>
+          {subtitle && <p className="text-navy-500 dark:text-navy-300 mt-1 text-sm">{subtitle}</p>}
         </div>
         <div className="flex items-center gap-2">
           <input ref={importRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImport} />

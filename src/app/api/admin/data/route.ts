@@ -25,6 +25,10 @@ const models: Record<string, any> = {
   projects: prisma.project,
 };
 
+const softDeleteModels = new Set([
+  'invoices', 'leads', 'notes', 'tasks', 'calendar-events', 'transactions', 'projects', 'clients'
+]);
+
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -32,10 +36,15 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type');
+  const includeTrash = searchParams.get('trash') === 'true';
   if (!type || !models[type]) return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
 
   try {
-    const items = await models[type].findMany({ orderBy: { createdAt: 'desc' } });
+    const where: any = {};
+    if (softDeleteModels.has(type) && !includeTrash) {
+      where.deletedAt = null;
+    }
+    const items = await models[type].findMany({ where, orderBy: { createdAt: 'desc' } });
     return NextResponse.json(items);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -55,7 +64,6 @@ export async function POST(request: Request) {
     let result;
     const userId = (session.user as any)?.id || 'system';
     if (action === 'create') {
-      // Hash password for user creation
       if (type === 'clients' && data.password) {
         data.passwordHash = await bcrypt.hash(data.password, 12);
         delete data.password;
@@ -63,7 +71,6 @@ export async function POST(request: Request) {
       result = await model.create({ data });
       logActivity(userId, 'create', `Created ${type.slice(0, -1)}: ${result.title || result.name || result.number || result.id}`, result.id, type);
 
-      // Email notifications
       if (type === 'invoices' && result.clientId) {
         const client = await prisma.user.findUnique({ where: { id: result.clientId } });
         if (client?.email) {
@@ -84,8 +91,19 @@ export async function POST(request: Request) {
       result = await model.update({ where: { id }, data: updateData });
       logActivity(userId, 'update', `Updated ${type.slice(0, -1)}: ${result.title || result.name || result.number || result.id}`, result.id, type);
     } else if (action === 'delete') {
+      if (softDeleteModels.has(type)) {
+        result = await model.update({ where: { id: data.id }, data: { deletedAt: new Date() } });
+        logActivity(userId, 'delete', `Moved ${type.slice(0, -1)} to trash: ${result.title || result.name || result.number || result.id}`, data.id, type);
+      } else {
+        result = await model.delete({ where: { id: data.id } });
+        logActivity(userId, 'delete', `Deleted ${type.slice(0, -1)}: ${data.id}`, data.id, type);
+      }
+    } else if (action === 'restore') {
+      result = await model.update({ where: { id: data.id }, data: { deletedAt: null } });
+      logActivity(userId, 'restore', `Restored ${type.slice(0, -1)} from trash: ${result.title || result.name || result.number || result.id}`, data.id, type);
+    } else if (action === 'force-delete') {
       result = await model.delete({ where: { id: data.id } });
-      logActivity(userId, 'delete', `Deleted ${type.slice(0, -1)}: ${data.id}`, data.id, type);
+      logActivity(userId, 'force-delete', `Permanently deleted ${type.slice(0, -1)}: ${data.id}`, data.id, type);
     } else {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
