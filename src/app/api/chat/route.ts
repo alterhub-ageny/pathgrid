@@ -65,14 +65,13 @@ async function saveChatMessages(sessionId: string, messages: { role: string; con
 export async function POST(request: Request) {
   try {
     const authSession = await getServerSession(authOptions);
-    const { message, sessionId, locale, action } = await request.json();
+    const { message, sessionId, locale, action, name, email, subject } = await request.json();
     if (!message) return NextResponse.json({ error: 'Message required' }, { status: 400 });
 
     const chatSessionId = sessionId || `session_${Date.now()}`;
 
     // Handle human handoff
     if (action === 'handoff') {
-      const { name, email, subject } = await request.json();
       const userId = (authSession?.user as any)?.id;
 
       let clientId = userId;
