@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn, getSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -34,15 +34,8 @@ export default function LoginPage() {
       return;
     }
 
-    // Fetch session to determine user role and redirect accordingly
-    const session = await getSession();
-    const role = (session?.user as any)?.role;
-
-    if (role === 'client') {
-      window.location.href = `/${locale}/client-portal`;
-    } else {
-      window.location.href = `/${locale}/`;
-    }
+    // Full page reload ensures fresh session cookie
+    window.location.href = `/${locale}/`;
   };
 
   return (
