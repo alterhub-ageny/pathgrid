@@ -1,7 +1,5 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import GoogleProvider from 'next-auth/providers/google';
-import GitHubProvider from 'next-auth/providers/github';
 import bcrypt from 'bcryptjs';
 import { TOTP } from 'otplib';
 import prisma from './prisma';
@@ -62,12 +60,6 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-      ? [GoogleProvider({ clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET })]
-      : []),
-    ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
-      ? [GitHubProvider({ clientId: process.env.GITHUB_CLIENT_ID, clientSecret: process.env.GITHUB_CLIENT_SECRET })]
-      : []),
   ],
   session: { strategy: 'jwt' },
   callbacks: {
@@ -78,20 +70,6 @@ export const authOptions: NextAuthOptions = {
         token.twoFactorEnabled = (user as any).twoFactorEnabled || false;
         if ((user as any).totpVerified) {
           token.totpVerified = true;
-        }
-      }
-      if (account && account.provider === 'google') {
-        // Auto-create user if signing in with Google for the first time
-        const existing = await prisma.user.findUnique({ where: { email: token.email! } });
-        if (!existing) {
-          const created = await prisma.user.create({
-            data: { email: token.email!, name: token.name, image: token.picture, role: 'client' },
-          });
-          token.id = created.id;
-          token.role = 'client';
-        } else {
-          token.id = existing.id;
-          token.role = existing.role;
         }
       }
       return token;

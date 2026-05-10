@@ -2,17 +2,14 @@
 
 import { useState } from 'react';
 import { signIn, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Chrome, Github } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 export default function LoginPage() {
   const { t, locale } = useTranslation();
-  const router = useRouter();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -92,29 +89,6 @@ export default function LoginPage() {
               {t('auth.login')}
             </Button>
           </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-navy-200 dark:border-navy-600" /></div>
-            <div className="relative flex justify-center"><span className="bg-white dark:bg-navy-800 px-3 text-xs text-navy-400">or continue with</span></div>
-          </div>
-
-          <div className="flex gap-3">
-            <button onClick={() => signIn('google', { callbackUrl: `/${locale}/client-portal` })}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-navy-200 dark:border-navy-600 text-sm font-medium hover:bg-navy-50 dark:hover:bg-navy-700 transition-colors">
-              <Chrome className="w-4 h-4" /> Google
-            </button>
-            <button onClick={() => signIn('github', { callbackUrl: `/${locale}/client-portal` })}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-navy-200 dark:border-navy-600 text-sm font-medium hover:bg-navy-50 dark:hover:bg-navy-700 transition-colors">
-              <Github className="w-4 h-4" /> GitHub
-            </button>
-          </div>
-
-          <p className="mt-6 text-center text-sm text-navy-500 dark:text-navy-400">
-            {t('auth.noAccount')}{' '}
-            <Link href={`/${locale}/auth/register`} className="text-gold-600 dark:text-gold-500 hover:underline font-medium">
-              {t('auth.register')}
-            </Link>
-          </p>
         </div>
       </motion.div>
     </div>
