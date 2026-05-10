@@ -75,7 +75,7 @@ export function ChatBot() {
         const res = await fetch(`/api/chat?${params}`);
         const history = await res.json();
         if (Array.isArray(history) && history.length > 0) {
-          setChatMessages(history.map((m: any) => ({ role: m.role, content: m.content })));
+          setChatMessages(history.map((m: any) => ({ role: m.role, content: m.content, _t: m.createdAt, fromConversation: m.fromConversation })));
         }
       } catch { /* silent */ }
       setHistoryLoaded(true);
@@ -101,17 +101,14 @@ export function ChatBot() {
         }
         const res = await fetch(`/api/chat?${params}`);
         const history: any[] = await res.json();
-        if (Array.isArray(history)) {
-          setTimeout(() => {
-            const current = useAppStore.getState().chatMessages;
-            const existing = new Set(current.map((m: any) => m.content + (m._t || '')));
-            const toAdd = history.filter((m: any) => m.fromConversation && !existing.has(m.content + m.createdAt));
-            if (toAdd.length > 0) {
-              const merged = [...current, ...toAdd.map((m: any) => ({ role: m.role, content: m.content, _t: m.createdAt }))]
-                .sort((a: any, b: any) => new Date(a._t || 0).getTime() - new Date(b._t || 0).getTime());
-              useAppStore.getState().setChatMessages(merged);
-            }
-          }, 0);
+        if (!Array.isArray(history)) return;
+        const current = useAppStore.getState().chatMessages;
+        const existing = new Set(current.map((m: any) => m.content + (m._t || '')));
+        const toAdd = history.filter((m: any) => m.fromConversation && !existing.has(m.content + m.createdAt));
+        if (toAdd.length > 0) {
+          const merged = [...current, ...toAdd.map((m: any) => ({ role: m.role, content: m.content, _t: m.createdAt, fromConversation: true }))]
+            .sort((a: any, b: any) => new Date(a._t || 0).getTime() - new Date(b._t || 0).getTime());
+          useAppStore.getState().setChatMessages(merged);
         }
       } catch { /* silent */ }
     }, 3000);

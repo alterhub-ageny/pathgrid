@@ -116,7 +116,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const authSession = await getServerSession(authOptions);
-    const { message, sessionId, locale, action, name, email, subject } = await request.json();
+    const { message, sessionId, locale, action, name, email, subject, conversationId } = await request.json();
     if (!message) return NextResponse.json({ error: 'Message required' }, { status: 400 });
 
     const chatSessionId = sessionId || `session_${Date.now()}`;
@@ -184,7 +184,6 @@ export async function POST(request: Request) {
 
     // Handle reply to an existing conversation (visitor after handoff)
     if (action === 'reply-conversation') {
-      const { conversationId, name } = await request.json().catch(() => ({})) as any;
       if (!conversationId) return NextResponse.json({ error: 'Conversation ID required' }, { status: 400 });
 
       try {
