@@ -19,8 +19,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/login');
+      return;
     }
-  }, [status, router]);
+    if (status === 'authenticated' && session) {
+      const role = (session.user as any)?.role;
+      if (role === 'client') {
+        window.location.href = `/${localePath}/client-portal`;
+      }
+    }
+  }, [status, session, router, localePath]);
 
   if (status === 'loading') {
     return (
@@ -31,12 +38,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   if (!session) return null;
-
-  const role = (session.user as any)?.role;
-  if (role === 'client') {
-    router.push(`/${localePath}/client-portal`);
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-navy-50 dark:bg-navy-950 flex">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
 
@@ -10,6 +11,7 @@ interface ChatMessage {
 }
 
 export function ChatBot() {
+  const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: 'assistant', content: 'Hi! I\'m PathgridAI. How can I help you today?' },
@@ -20,8 +22,10 @@ export function ChatBot() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const isAuthenticated = !!session;
+
   useEffect(() => {
-    if (open) {
+    if (open && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [open]);
@@ -65,10 +69,13 @@ export function ChatBot() {
     }
   };
 
+  if (!isAuthenticated) return null;
+
   return (
     <>
       <button
         onClick={() => setOpen(true)}
+        title="Open PathgridAI Chat"
         className="fixed bottom-6 right-6 z-50 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-navy-700 dark:bg-gold-500 text-white dark:text-navy-900 shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
       >
         <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />

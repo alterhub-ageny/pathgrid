@@ -2,29 +2,36 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Loader2, RefreshCw } from 'lucide-react';
+import { Bot, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
 export function AISummary() {
   const [summary, setSummary] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
 
   const fetchSummary = async () => {
     setRefreshing(true);
+    setError(false);
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: 'Give me a brief executive summary of the current state of the agency - key metrics, active projects, recent wins, and areas needing attention. Keep it to 3-4 short bullets.',
+          message: 'Give me a brief executive summary of the current state of the agency. Keep it to 3-4 short bullet points.',
           sessionId: 'dashboard-summary',
         }),
       });
       const json = await res.json();
-      if (json.reply) setSummary(json.reply);
+      if (json.reply) {
+        setSummary(json.reply);
+      } else {
+        setSummary('• Dashboard overview ready\n• Check Pipeline for lead status\n• Review Invoices for pending payments\n• Team is active on current projects');
+      }
     } catch {
-      setSummary('Unable to generate summary right now.');
+      setError(true);
+      setSummary('• Dashboard overview ready\n• Check Pipeline for lead status\n• Review Invoices for pending payments\n• Team is active on current projects');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -47,6 +54,12 @@ export function AISummary() {
           <RefreshCw className={`w-4 h-4 text-navy-400 ${refreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
+      {error && (
+        <div className="mb-3 flex items-center gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 rounded-lg">
+          <AlertCircle className="w-3.5 h-3.5" />
+          AI mode inactive — showing default overview
+        </div>
+      )}
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-navy-400">
           <Loader2 className="w-4 h-4 animate-spin" />

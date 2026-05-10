@@ -31,6 +31,7 @@ export default function LocaleLayout({ children }: { children: React.ReactNode }
   const isAdmin = pathname?.includes('/admin/') || pathname?.endsWith('/admin');
   const isClientPortal = pathname?.includes('/client-portal/') || pathname?.endsWith('/client-portal');
   const isAuth = pathname?.includes('/auth/');
+  const showChat = isAdmin || isClientPortal;
 
   useEffect(() => {
     setLocale(locale);
@@ -56,7 +57,7 @@ export default function LocaleLayout({ children }: { children: React.ReactNode }
           {!isAdmin && !isClientPortal && !isAuth && <Header />}
           <main className="min-h-screen">{children}</main>
           {!isAdmin && !isClientPortal && !isAuth && <Footer />}
-          {(isAdmin || isClientPortal) && <ChatBot />}
+          {showChat && <ChatBot />}
         </body>
       </html>
     </SessionProvider>
