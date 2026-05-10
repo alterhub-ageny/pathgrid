@@ -131,9 +131,9 @@ export default function PipelineStagesPage() {
       </div>
 
       <Modal open={modal.open} onClose={() => setModal({ open: false })} title={modal.edit ? 'Edit Stage' : 'Add Stage'} size="md">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input name="key" label="Key (slug)" defaultValue={modal.edit?.key || ''}
-            placeholder="e.g. qualified" disabled={!!modal.edit} required />
+          <form key={modal.edit?.id || 'new'} onSubmit={handleSubmit} className="space-y-4">
+            <Input name="key" label="Key (slug)" defaultValue={modal.edit?.key || ''}
+              placeholder="e.g. qualified" required />
           <Input name="label" label="Label" defaultValue={modal.edit?.label || ''}
             placeholder="e.g. Qualified Lead" required />
           <div>
