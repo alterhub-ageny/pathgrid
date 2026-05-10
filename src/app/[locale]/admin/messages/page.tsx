@@ -62,7 +62,7 @@ export default function AdminMessagesPage() {
     const interval = setInterval(() => {
       if (activeConv) fetchMessages(activeConv);
       fetchConversations();
-    }, 10000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [activeConv, fetchMessages, fetchConversations]);
 

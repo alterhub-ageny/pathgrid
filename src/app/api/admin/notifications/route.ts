@@ -9,8 +9,9 @@ export async function GET() {
   if ((session.user as any)?.role === 'client') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   try {
+    const userId = (session.user as any)?.id;
     const notifications = await prisma.notification.findMany({
-      where: { read: false },
+      where: { read: false, userId },
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
@@ -35,7 +36,8 @@ export async function POST(request: Request) {
     }
 
     if (action === 'mark-all-read') {
-      await prisma.notification.updateMany({ data: { read: true } });
+      const userId = (session.user as any)?.id;
+      await prisma.notification.updateMany({ where: { userId }, data: { read: true } });
       return NextResponse.json({ success: true });
     }
 

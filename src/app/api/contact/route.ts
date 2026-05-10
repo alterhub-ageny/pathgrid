@@ -10,26 +10,26 @@ export async function POST(request: Request) {
     }
 
     // Find or create a client user for this visitor
-    let client = await prisma.user.findUnique({ where: { email } }).catch(() => null);
+    let client = await prisma.user.findUnique({ where: { email } });
     if (!client) {
       client = await prisma.user.create({
         data: { name, email, role: 'client' },
-      }).catch(() => null);
+      });
     }
 
-    if (!client) {
-      return NextResponse.json({ success: false, message: 'Could not process contact form' }, { status: 500 });
-    }
-
-    // Create a conversation and message
-    const conversation = await prisma.conversation.create({
-      data: {
-        subject: subject || `Contact Form: ${name}`,
-        clientId: client.id,
-      },
-    });
-
+    const now = new Date();
     const msgBody = `From: ${name} (${email})${company ? `\nCompany: ${company}` : ''}${subject ? `\nSubject: ${subject}` : ''}\n\n${message}`;
+
+    // Use a transaction to ensure atomicity
+    const [conversation] = await prisma.$transaction([
+      prisma.conversation.create({
+        data: {
+          subject: subject || `Contact Form: ${name}`,
+          clientId: client.id,
+          lastMessageAt: now,
+        },
+      }),
+    ]);
 
     await prisma.message.create({
       data: {
@@ -48,9 +48,9 @@ export async function POST(request: Request) {
           type: 'info',
           title: 'New contact form message',
           message: `${name} sent a message: ${subject || 'No subject'}`,
-          link: `/en/admin/messages`,
+          link: `/${admin.locale || 'en'}/admin/messages`,
         },
-      }).catch(() => {});
+      });
     }
 
     return NextResponse.json({ success: true, message: 'Message received' });

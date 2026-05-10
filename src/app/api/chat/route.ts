@@ -93,13 +93,16 @@ export async function POST(request: Request) {
       }
 
       try {
-        const conversation = await prisma.conversation.create({
-          data: {
-            subject: subject || 'Chat Handoff: ' + (name || email || 'Visitor'),
-            clientId,
-            adminId: null,
-          },
-        });
+        const now = new Date();
+        const [conversation] = await prisma.$transaction([
+          prisma.conversation.create({
+            data: {
+              subject: subject || 'Chat Handoff: ' + (name || email || 'Visitor'),
+              clientId,
+              lastMessageAt: now,
+            },
+          }),
+        ]);
 
         await prisma.message.create({
           data: {
@@ -120,7 +123,7 @@ export async function POST(request: Request) {
               message: `${name || email || 'A visitor'} wants to talk to a human`,
               link: `/${admin.locale || 'en'}/admin/messages`,
             },
-          }).catch(() => {});
+          });
         }
 
         logActivity(clientId, 'handoff', `Chat handoff requested by ${name || email || clientId}`, conversation.id, 'conversations');
