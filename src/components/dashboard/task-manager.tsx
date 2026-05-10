@@ -50,6 +50,8 @@ export function TaskManager() {
         setNewTask('');
         toast.success('Task added');
         fetchTasks();
+      } else {
+        toast.error(json.error || 'Failed to add task');
       }
     } catch {
       toast.error('Failed to add task');

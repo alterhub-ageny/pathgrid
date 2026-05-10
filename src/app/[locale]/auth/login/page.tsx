@@ -41,7 +41,7 @@ export default function LoginPage() {
     if (role === 'client') {
       window.location.href = `/${locale}/client-portal`;
     } else {
-      window.location.href = `/${locale}/admin/dashboard`;
+      window.location.href = `/${locale}/`;
     }
   };
 

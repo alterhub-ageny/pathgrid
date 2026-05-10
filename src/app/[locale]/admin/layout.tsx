@@ -55,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <AdminSidebar />
       <div className="flex-1 flex flex-col min-h-screen">
         <AdminHeader />
-        <main className="flex-1 p-6 lg:p-8 overflow-auto">
+        <main className="flex-1 p-6 lg:p-8 overflow-auto text-navy-900 dark:text-white">
           {children}
         </main>
       </div>

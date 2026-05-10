@@ -125,7 +125,7 @@ export function ChatBot() {
                         ? 'bg-navy-700 dark:bg-gold-500 text-white dark:text-navy-900 rounded-tr-md'
                         : 'bg-navy-100 dark:bg-navy-700 text-navy-900 dark:text-white rounded-tl-md'
                     }`}>
-                      <div className="prose prose-sm dark:prose-invert max-w-none">{msg.content}</div>
+                      <div className="prose prose-sm dark:prose-invert max-w-none">{msg.content.replace(/\*\*(.*?)\*\*/g, '$1').replace(/#{1,6}\s/g, '').replace(/\*(.*?)\*/g, '$1').replace(/`{1,3}(.*?)`{1,3}/g, '$1')}</div>
                     </div>
                   </div>
                 </div>
