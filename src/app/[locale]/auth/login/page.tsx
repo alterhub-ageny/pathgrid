@@ -89,6 +89,13 @@ export default function LoginPage() {
               {t('auth.login')}
             </Button>
           </form>
+
+          <p className="mt-6 text-center text-sm text-navy-500 dark:text-navy-400">
+            {t('auth.noAccount')}{' '}
+            <Link href={`/${locale}/auth/register`} className="text-gold-600 dark:text-gold-500 hover:underline font-medium">
+              {t('auth.register')}
+            </Link>
+          </p>
         </div>
       </motion.div>
     </div>

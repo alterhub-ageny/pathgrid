@@ -66,6 +66,12 @@ export function Header() {
             <ThemeToggle />
             <LanguageSwitcher />
             <Link
+              href={`/${locale}/auth/register`}
+              className="hidden lg:inline-flex px-4 py-2 text-sm font-medium bg-gold-500 text-white rounded-lg hover:bg-gold-400 transition-colors"
+            >
+              {t('nav.register')}
+            </Link>
+            <Link
               href={`/${locale}/auth/login`}
               className="hidden lg:inline-flex px-4 py-2 text-sm font-medium text-navy-700 dark:text-white border border-navy-300 dark:border-navy-600 rounded-lg hover:bg-navy-50 dark:hover:bg-navy-800 transition-colors"
             >
@@ -112,6 +118,13 @@ export function Header() {
                 </Link>
               ))}
               <hr className="my-3 border-navy-100 dark:border-navy-700" />
+              <Link
+                href={`/${locale}/auth/register`}
+                onClick={() => setMobileOpen(false)}
+                className="block px-4 py-3 text-sm font-medium text-center bg-gold-500 text-white rounded-xl"
+              >
+                {t('nav.register')}
+              </Link>
               <Link
                 href={`/${locale}/auth/login`}
                 onClick={() => setMobileOpen(false)}
