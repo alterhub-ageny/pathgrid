@@ -4,6 +4,9 @@ import type { Locale } from '@/types';
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  _id?: string;
+  _t?: string;
+  fromConversation?: boolean;
 }
 
 interface AppState {

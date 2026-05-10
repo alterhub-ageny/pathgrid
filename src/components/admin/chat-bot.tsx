@@ -6,13 +6,21 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageCircle, X, Send, Bot, User, Loader2, Sparkles,
-  Zap, Headphones, ChevronRight, CheckCircle, Clock, MessageSquare
+  Zap, Headphones, ChevronRight, Clock, MessageSquare, CheckCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppStore } from '@/store/app-store';
 
 const STORAGE_KEY_SESSION = 'pathgrid_chat_session';
 const STORAGE_KEY_HANDOFF = 'pathgrid_chat_handoff';
+
+interface HandoffData {
+  name: string;
+  email: string;
+  conversationId: string;
+}
+
+type ChatMode = 'ai' | 'handoff-form' | 'conversation';
 
 export function ChatBot() {
   const { data: session } = useSession();
@@ -28,153 +36,160 @@ export function ChatBot() {
   const resetChat = useAppStore((s) => s.resetChat);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [mode, setMode] = useState<ChatMode>('ai');
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [showHandoff, setShowHandoff] = useState(false);
   const [handoffName, setHandoffName] = useState(session?.user?.name || '');
   const [handoffEmail, setHandoffEmail] = useState(session?.user?.email || '');
   const [handoffMessage, setHandoffMessage] = useState('');
-  const [handoffSending, setHandoffSending] = useState(false);
+  const [handoffData, setHandoffData] = useState<HandoffData | null>(null);
+  const [waitingForAgent, setWaitingForAgent] = useState(true);
 
-  const isAuthenticated = !!session;
-
-  const [handoffData, setHandoffData] = useState<{ name: string; email: string; conversationId?: string } | null>(null);
-
-  // Restore sessionId from localStorage on mount
+  // Restore session + handoff from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY_SESSION);
     if (saved) setChatSessionId(saved);
+
     const savedHandoff = localStorage.getItem(STORAGE_KEY_HANDOFF);
     if (savedHandoff) {
-      try { setHandoffData(JSON.parse(savedHandoff)); } catch { /* ignore */ }
+      try {
+        const parsed = JSON.parse(savedHandoff) as HandoffData;
+        if (parsed.conversationId) {
+          setHandoffData(parsed);
+          setMode('conversation');
+        }
+      } catch { /* ignore */ }
     }
   }, []);
 
-  // Persist sessionId to localStorage
+  // Persist sessionId
   useEffect(() => {
     if (sessionId) localStorage.setItem(STORAGE_KEY_SESSION, sessionId);
   }, [sessionId]);
 
-  // Fetch past messages when sessionId is known
-  useEffect(() => {
-    if (!sessionId || historyLoaded || messages.length > 0) return;
-    (async () => {
-      try {
-        const savedHandoff = localStorage.getItem(STORAGE_KEY_HANDOFF);
-        let handoff: any = null;
-        if (savedHandoff) {
-          try { handoff = JSON.parse(savedHandoff); } catch { /* ignore */ }
-        }
-        const params = new URLSearchParams({ sessionId });
-        if (handoff?.conversationId) {
-          params.set('conversationId', handoff.conversationId);
-        } else if (handoff?.email) {
-          params.set('email', handoff.email);
-        }
-        const res = await fetch(`/api/chat?${params}`);
-        const history = await res.json();
-        if (Array.isArray(history) && history.length > 0) {
-          setChatMessages(history.map((m: any) => ({ role: m.role, content: m.content, _t: m.createdAt, fromConversation: m.fromConversation })));
-        }
-      } catch { /* silent */ }
-      setHistoryLoaded(true);
-    })();
-  }, [sessionId, historyLoaded]);
-
+  // Focus input on open
   useEffect(() => {
     if (open && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [open]);
 
-  // Poll for new messages when handoff is active
+  // Poll for conversation messages
   useEffect(() => {
-    if (!handoffData?.email && !handoffData?.conversationId) return;
-    const interval = setInterval(async () => {
+    if (mode !== 'conversation' || !handoffData?.conversationId) return;
+    const fetchHistory = async () => {
       try {
-        const params = new URLSearchParams();
-        if (handoffData?.conversationId) {
-          params.set('conversationId', handoffData.conversationId);
-        } else if (handoffData?.email) {
-          params.set('email', handoffData.email);
-        }
-        const res = await fetch(`/api/chat?${params}`);
+        const res = await fetch(`/api/chat/handoff?conversationId=${handoffData.conversationId}`);
         const history: any[] = await res.json();
-        if (!Array.isArray(history)) return;
-        const current = useAppStore.getState().chatMessages;
-        const existing = new Set(current.map((m: any) => m.content + (m._t || '')));
-        const toAdd = history.filter((m: any) => m.fromConversation && !existing.has(m.content + m.createdAt));
-        if (toAdd.length > 0) {
-          const merged = [...current, ...toAdd.map((m: any) => ({ role: m.role, content: m.content, _t: m.createdAt, fromConversation: true }))]
-            .sort((a: any, b: any) => new Date(a._t || 0).getTime() - new Date(b._t || 0).getTime());
-          useAppStore.getState().setChatMessages(merged);
-        }
-      } catch { /* silent */ }
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [handoffData?.email, handoffData?.conversationId]);
+        if (!Array.isArray(history) || history.length === 0) return;
 
+        const current = useAppStore.getState().chatMessages;
+        const existingIds = new Set(current.map((m: any) => m._id).filter(Boolean));
+
+        const toAdd = history.filter((m: any) => m.id && !existingIds.has(m.id));
+        if (toAdd.length === 0) return;
+
+        const merged = [
+          ...current,
+          ...toAdd.map(m => ({
+            role: m.role,
+            content: m.content,
+            _id: m.id,
+            _t: m.createdAt,
+            fromConversation: true,
+          })),
+        ].sort(
+          (a: any, b: any) => new Date(a._t || 0).getTime() - new Date(b._t || 0).getTime()
+        );
+
+        useAppStore.getState().setChatMessages(merged);
+      } catch { /* silent */ }
+    };
+
+    // Fetch immediately on start
+    fetchHistory();
+    const interval = setInterval(fetchHistory, 3000);
+    return () => clearInterval(interval);
+  }, [mode, handoffData?.conversationId]);
+
+  // Detect when first admin reply arrives
+  useEffect(() => {
+    if (mode === 'conversation') {
+      const hasAdminReply = messages.some(
+        (m: any) => m.role === 'assistant' && m.fromConversation
+      );
+      if (hasAdminReply) setWaitingForAgent(false);
+    }
+  }, [messages, mode]);
+
+  // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, showHandoff]);
+  }, [messages]);
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || loading) return;
 
     setInput('');
-    addChatMessage({ role: 'user', content: text });
     setLoading(true);
 
     try {
-      // If handoff is active, send message to the conversation
-      if (handoffData?.conversationId) {
-        const res = await fetch('/api/chat', {
+      if (mode === 'conversation' && handoffData?.conversationId) {
+        const res = await fetch('/api/chat/handoff', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'reply-conversation',
-            message: text,
+            action: 'reply',
             conversationId: handoffData.conversationId,
+            message: text,
             name: handoffData.name,
-            locale,
           }),
         });
         const json = await res.json();
-        if (!res.ok) {
+        if (res.ok && json.id) {
+          addChatMessage({
+            role: 'user',
+            content: text,
+            _id: json.id,
+            _t: new Date().toISOString(),
+            fromConversation: true,
+          });
+        } else {
           toast.error(json.error || 'Failed to send');
         }
-        setLoading(false);
-        return;
-      }
-
-      // Normal AI chat
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, sessionId, locale }),
-      });
-      const json = await res.json();
-      if (res.status === 401) {
-        addChatMessage({ role: 'assistant', content: 'Please log in to use the chat.' });
-      } else if (json.reply) {
-        addChatMessage({ role: 'assistant', content: json.reply });
-        if (json.sessionId) setChatSessionId(json.sessionId);
       } else {
-        addChatMessage({ role: 'assistant', content: 'Sorry, I couldn\'t process that.' });
+        addChatMessage({ role: 'user', content: text });
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, sessionId, locale }),
+        });
+        const json = await res.json();
+        if (res.status === 401) {
+          addChatMessage({ role: 'assistant', content: 'Please log in to use the chat.' });
+        } else if (json.reply) {
+          addChatMessage({ role: 'assistant', content: json.reply });
+          if (json.sessionId) setChatSessionId(json.sessionId);
+        } else {
+          addChatMessage({ role: 'assistant', content: 'Sorry, I couldn\'t process that.' });
+        }
       }
     } catch {
-      addChatMessage({ role: 'assistant', content: 'Network error. Please try again.' });
+      if (mode === 'conversation') {
+        toast.error('Network error. Please try again.');
+      } else {
+        addChatMessage({ role: 'assistant', content: 'Network error. Please try again.' });
+      }
     } finally {
       setLoading(false);
     }
-  }, [input, loading, sessionId, locale, handoffData?.conversationId, addChatMessage, setChatSessionId]);
+  }, [input, loading, sessionId, locale, mode, handoffData, addChatMessage, setChatSessionId]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (showHandoff) return;
+      if (mode === 'handoff-form') return;
       handleSend();
     }
   };
@@ -184,13 +199,13 @@ export function ChatBot() {
       toast.error('Email is required');
       return;
     }
-    setHandoffSending(true);
+    setLoading(true);
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch('/api/chat/handoff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'handoff',
+          action: 'create',
           message: handoffMessage.trim(),
           name: handoffName.trim(),
           email: handoffEmail.trim(),
@@ -200,12 +215,20 @@ export function ChatBot() {
         }),
       });
       const json = await res.json();
-      if (res.ok && json.reply) {
-        addChatMessage({ role: 'assistant', content: json.reply });
-        const data = { name: handoffName.trim(), email: handoffEmail.trim(), conversationId: json.conversationId };
+      if (res.ok && json.conversationId) {
+        addChatMessage({
+          role: 'assistant',
+          content: json.reply || 'A team member will get back to you shortly.',
+        });
+        const data: HandoffData = {
+          name: handoffName.trim(),
+          email: handoffEmail.trim(),
+          conversationId: json.conversationId,
+        };
         setHandoffData(data);
         localStorage.setItem(STORAGE_KEY_HANDOFF, JSON.stringify(data));
-        setShowHandoff(false);
+        setMode('conversation');
+        setWaitingForAgent(true);
         toast.success('Request sent! We\'ll be in touch.');
       } else {
         toast.error(json.error || 'Failed to send request');
@@ -213,26 +236,25 @@ export function ChatBot() {
     } catch {
       toast.error('Network error');
     } finally {
-      setHandoffSending(false);
+      setLoading(false);
     }
   };
 
-  const toggleHandoff = () => {
-    setShowHandoff(!showHandoff);
-    if (!showHandoff && isAuthenticated && session?.user) {
-      setHandoffName(session.user.name || '');
-      setHandoffEmail(session.user.email || '');
-    }
-  };
+  const openHandoffForm = () => setMode('handoff-form');
 
   const clearHistory = () => {
     localStorage.removeItem(STORAGE_KEY_SESSION);
     localStorage.removeItem(STORAGE_KEY_HANDOFF);
     setHandoffData(null);
+    setMode('ai');
+    setWaitingForAgent(true);
     resetChat();
-    setHistoryLoaded(false);
     toast.success('Chat history cleared');
   };
+
+  const headerSubtitle = mode === 'conversation'
+    ? (waitingForAgent ? 'Waiting for team...' : 'Connected with team')
+    : 'AI Assistant \u00B7 Online';
 
   return (
     <>
@@ -284,42 +306,56 @@ export function ChatBot() {
                         <Zap className="w-3 h-3 text-gold-500" />
                       </h3>
                       <p className="text-[10px] text-navy-400 dark:text-navy-500">
-                        {handoffData ? 'Waiting for team...' : 'AI Assistant · Online'}
+                        {headerSubtitle}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button
-                      onClick={toggleHandoff}
-                      title="Talk to a human"
-                      className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 transition-colors group"
-                    >
-                      <Headphones className="w-4 h-4 text-navy-400 group-hover:text-gold-500 transition-colors" />
-                    </button>
-                    <button onClick={() => { setChatOpen(false); setShowHandoff(false); }} className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 transition-colors">
+                    {mode !== 'conversation' && (
+                      <button
+                        onClick={openHandoffForm}
+                        title="Talk to a human"
+                        className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 transition-colors group"
+                      >
+                        <Headphones className="w-4 h-4 text-navy-400 group-hover:text-gold-500 transition-colors" />
+                      </button>
+                    )}
+                    <button onClick={() => { setChatOpen(false); }} className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 transition-colors">
                       <X className="w-4 h-4 text-navy-400" />
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Handoff waiting banner */}
-              {handoffData && (
+              {/* Waiting banner */}
+              {mode === 'conversation' && waitingForAgent && (
                 <div className="shrink-0 px-4 py-2 bg-gradient-to-r from-gold-500/10 to-gold-600/5 border-b border-gold-500/20">
                   <div className="flex items-center gap-2 text-xs">
                     <Clock className="w-3 h-3 text-gold-600 animate-pulse" />
                     <span className="text-gold-700 dark:text-gold-400 font-medium">
-                      Awaiting team response{handoffData.name ? ` for ${handoffData.name}` : ''}
+                      Awaiting team response{handoffData?.name ? ` for ${handoffData.name}` : ''}
                     </span>
-                    <span className="text-gold-500/50 mx-1">·</span>
+                    <span className="text-gold-500/50 mx-1">&middot;</span>
                     <span className="text-gold-600/60">Ticket pending</span>
                   </div>
                 </div>
               )}
 
-              {/* Messages / Handoff */}
+              {/* Connected banner */}
+              {mode === 'conversation' && !waitingForAgent && (
+                <div className="shrink-0 px-4 py-2 bg-gradient-to-r from-green-500/10 to-green-600/5 border-b border-green-500/20">
+                  <div className="flex items-center gap-2 text-xs">
+                    <CheckCircle className="w-3 h-3 text-green-600" />
+                    <span className="text-green-700 dark:text-green-400 font-medium">
+                      Connected with a team member
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Body */}
               <div className="flex-1 overflow-hidden">
-                {showHandoff ? (
+                {mode === 'handoff-form' ? (
                   <div className="h-full p-4 overflow-y-auto">
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                       <div className="text-center">
@@ -355,17 +391,17 @@ export function ChatBot() {
                         />
                         <div className="flex gap-2">
                           <button
-                            onClick={() => setShowHandoff(false)}
+                            onClick={() => setMode('ai')}
                             className="flex-1 px-3 py-2.5 text-sm rounded-xl border border-navy-200 dark:border-navy-600 text-navy-600 dark:text-navy-300 hover:bg-navy-50 dark:hover:bg-navy-800 transition-colors"
                           >
                             Cancel
                           </button>
                           <button
                             onClick={requestHandoff}
-                            disabled={handoffSending}
+                            disabled={loading}
                             className="flex-1 px-3 py-2.5 text-sm rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-white font-medium hover:from-gold-600 hover:to-gold-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                           >
-                            {handoffSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                             Send
                           </button>
                         </div>
@@ -378,7 +414,7 @@ export function ChatBot() {
                       <div className="text-center py-8">
                         <MessageSquare className="w-10 h-10 text-navy-300 dark:text-navy-600 mx-auto mb-3" />
                         <p className="text-sm text-navy-400 dark:text-navy-500">
-                          {handoffData ? 'Waiting for a team member to respond.' : 'Ask me anything about Pathgrid Agency!'}
+                          {mode === 'conversation' ? 'Waiting for a team member to respond.' : 'Ask me anything about Pathgrid Agency!'}
                         </p>
                       </div>
                     )}
@@ -386,62 +422,52 @@ export function ChatBot() {
                       const isUser = msg.role === 'user';
                       const isConversation = !!(msg as any).fromConversation;
                       const prevIsConversation = i > 0 ? !!((messages as any)[i - 1] as any)?.fromConversation : false;
-                      const showSep = isConversation && !prevIsConversation && i > 0;
-                      return (<div key={i}>
-                      {showSep && (
-                        <div className="flex items-center gap-2 my-4">
-                          <div className="flex-1 h-px bg-gold-300 dark:bg-gold-600/50" />
-                          <span className="text-[10px] text-gold-600 dark:text-gold-400 font-medium shrink-0">Live conversation started</span>
-                          <div className="flex-1 h-px bg-gold-300 dark:bg-gold-600/50" />
+                      const showSeparator = isConversation && !prevIsConversation && i > 0;
+
+                      return (
+                        <div key={msg._id || i}>
+                          {showSeparator && (
+                            <div className="flex items-center gap-2 my-4">
+                              <div className="flex-1 h-px bg-gold-300 dark:bg-gold-600/50" />
+                              <span className="text-[10px] text-gold-600 dark:text-gold-400 font-medium shrink-0">Live conversation started</span>
+                              <div className="flex-1 h-px bg-gold-300 dark:bg-gold-600/50" />
+                            </div>
+                          )}
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}
+                          >
+                            <div className={`flex items-start gap-2 max-w-[85%] ${isUser ? 'flex-row-reverse' : ''}`}>
+                              <div className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center shadow-sm ${
+                                isUser
+                                  ? 'bg-navy-200 dark:bg-navy-700'
+                                  : 'bg-gradient-to-br from-gold-400 to-amber-500 dark:from-gold-500 dark:to-amber-600'
+                              }`}>
+                                {isUser
+                                  ? <User className="w-3.5 h-3.5 text-navy-600 dark:text-navy-300" />
+                                  : <Bot className="w-3.5 h-3.5 text-white" />
+                                }
+                              </div>
+                              <div className={`p-3 text-sm leading-relaxed ${
+                                isUser
+                                  ? 'bg-gradient-to-br from-navy-700 to-navy-800 dark:from-gold-500 dark:to-amber-500 text-white dark:text-navy-900 rounded-2xl rounded-br-md shadow-md'
+                                  : 'bg-white dark:bg-navy-800 text-navy-900 dark:text-white rounded-2xl rounded-bl-md border-l-2 border-gold-400 dark:border-gold-500 shadow-sm'
+                              }`}>
+                                {msg.content.replace(/\*\*(.*?)\*\*/g, '$1').replace(/#{1,6}\s/g, '').replace(/\*(.*?)\*/g, '$1').replace(/`{1,3}(.*?)`{1,3}/g, '$1')}
+                              </div>
+                            </div>
+                          </motion.div>
                         </div>
-                      )}
-                      <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}
-                        >
-                          <div className={`flex items-start gap-2 max-w-[85%] ${isUser ? 'flex-row-reverse' : ''}`}>
-                            <div className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center shadow-sm ${
-                              isUser
-                                ? 'bg-navy-200 dark:bg-navy-700'
-                                : 'bg-gradient-to-br from-gold-400 to-amber-500 dark:from-gold-500 dark:to-amber-600'
-                            }`}>
-                              {isUser
-                                ? <User className="w-3.5 h-3.5 text-navy-600 dark:text-navy-300" />
-                                : <Bot className="w-3.5 h-3.5 text-white" />
-                              }
-                            </div>
-                            <div className={`p-3 text-sm leading-relaxed ${
-                              isUser
-                                ? 'bg-gradient-to-br from-navy-700 to-navy-800 dark:from-gold-500 dark:to-amber-500 text-white dark:text-navy-900 rounded-2xl rounded-br-md shadow-md'
-                                : 'bg-white dark:bg-navy-800 text-navy-900 dark:text-white rounded-2xl rounded-bl-md border-l-2 border-gold-400 dark:border-gold-500 shadow-sm'
-                            }`}>
-                              {msg.content.replace(/\*\*(.*?)\*\*/g, '$1').replace(/#{1,6}\s/g, '').replace(/\*(.*?)\*/g, '$1').replace(/`{1,3}(.*?)`{1,3}/g, '$1')}
-                            </div>
-                          </div>
-                        </motion.div>
-                      </div>
-                    );
+                      );
                     })}
                     {loading && (
                       <div className="flex justify-start mb-3">
                         <div className="flex items-center gap-2.5 p-3 rounded-2xl rounded-tl-md bg-white/60 dark:bg-navy-800/60 backdrop-blur-sm border border-navy-100/50 dark:border-navy-700/50">
-                          <motion.div
-                            animate={{ scale: [1, 1.3, 1] }}
-                            transition={{ duration: 0.8, repeat: Infinity, delay: 0 }}
-                            className="w-1.5 h-1.5 rounded-full bg-gold-500"
-                          />
-                          <motion.div
-                            animate={{ scale: [1, 1.3, 1] }}
-                            transition={{ duration: 0.8, repeat: Infinity, delay: 0.2 }}
-                            className="w-1.5 h-1.5 rounded-full bg-gold-500"
-                          />
-                          <motion.div
-                            animate={{ scale: [1, 1.3, 1] }}
-                            transition={{ duration: 0.8, repeat: Infinity, delay: 0.4 }}
-                            className="w-1.5 h-1.5 rounded-full bg-gold-500"
-                          />
+                          <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.8, repeat: Infinity, delay: 0 }} className="w-1.5 h-1.5 rounded-full bg-gold-500" />
+                          <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.8, repeat: Infinity, delay: 0.2 }} className="w-1.5 h-1.5 rounded-full bg-gold-500" />
+                          <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.8, repeat: Infinity, delay: 0.4 }} className="w-1.5 h-1.5 rounded-full bg-gold-500" />
                           <span className="text-xs text-navy-400 ml-1">Thinking</span>
                         </div>
                       </div>
@@ -452,7 +478,7 @@ export function ChatBot() {
               </div>
 
               {/* Input */}
-              {!showHandoff && (
+              {mode !== 'handoff-form' && (
                 <div className="shrink-0 p-3 border-t border-navy-100/50 dark:border-navy-700/50 bg-gradient-to-t from-white/50 to-transparent dark:from-navy-900/30 to-transparent">
                   <div className="flex gap-2">
                     <input
@@ -461,7 +487,7 @@ export function ChatBot() {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder="Ask anything..."
+                      placeholder={mode === 'conversation' ? 'Type a message...' : 'Ask anything...'}
                       disabled={loading}
                       className="flex-1 px-4 py-2.5 rounded-xl border border-navy-200/50 dark:border-navy-600/50 bg-white/50 dark:bg-navy-800/50 text-sm text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 placeholder:text-navy-400 backdrop-blur-sm disabled:opacity-50"
                     />
@@ -471,15 +497,17 @@ export function ChatBot() {
                     </button>
                   </div>
                   <div className="flex items-center justify-between mt-2">
-                    <button
-                      onClick={toggleHandoff}
-                      className="flex items-center gap-1 text-[10px] text-navy-400 hover:text-gold-500 transition-colors"
-                    >
-                      <Headphones className="w-3 h-3" />
-                      {handoffData ? 'Resubmit request' : 'Talk to a human'}
-                      <ChevronRight className="w-2.5 h-2.5" />
-                    </button>
-                    <div className="flex items-center gap-2">
+                    {mode !== 'conversation' && (
+                      <button
+                        onClick={openHandoffForm}
+                        className="flex items-center gap-1 text-[10px] text-navy-400 hover:text-gold-500 transition-colors"
+                      >
+                        <Headphones className="w-3 h-3" />
+                        Talk to a human
+                        <ChevronRight className="w-2.5 h-2.5" />
+                      </button>
+                    )}
+                    <div className="flex items-center gap-2 ml-auto">
                       <button
                         onClick={clearHistory}
                         className="text-[10px] text-navy-300 dark:text-navy-600 hover:text-red-400 transition-colors"
