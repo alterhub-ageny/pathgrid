@@ -62,6 +62,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, data: message });
     }
 
+    if (action === 'mark-read') {
+      await prisma.message.updateMany({
+        where: { conversationId: data.conversationId, senderId: { not: userId }, read: false },
+        data: { read: true },
+      });
+      return NextResponse.json({ success: true });
+    }
+
     if (action === 'create-conversation') {
       const conversation = await prisma.conversation.create({
         data: {

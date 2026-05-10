@@ -62,6 +62,14 @@ async function saveChatMessages(sessionId: string, messages: { role: string; con
   }
 }
 
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const sessionId = searchParams.get('sessionId');
+  if (!sessionId) return NextResponse.json([]);
+  const messages = await getChatHistory(sessionId);
+  return NextResponse.json(messages);
+}
+
 export async function POST(request: Request) {
   try {
     const authSession = await getServerSession(authOptions);
@@ -127,6 +135,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
           reply: `Thank you${name ? ` ${name}` : ''}! A team member will get back to you shortly. We've created a conversation in your account where you can continue this discussion.`,
           conversationId: conversation.id,
+          sessionId: chatSessionId,
         });
       } catch (err: any) {
         return NextResponse.json({ error: err.message || 'Failed to create handoff' }, { status: 500 });
@@ -140,9 +149,9 @@ export async function POST(request: Request) {
 
     if (AI_API_KEY) {
       try {
-        const recent = authSession ? await getChatHistory(chatSessionId) : [];
+        const recent = await getChatHistory(chatSessionId);
 
-        const messages = [
+        const msgs = [
           { role: 'system', content: buildSystemPrompt(locale || 'en') },
           ...recent.map((m: any) => ({ role: m.role, content: m.content })),
           { role: 'user', content: message },
@@ -154,13 +163,13 @@ export async function POST(request: Request) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${AI_API_KEY}`,
           },
-          body: JSON.stringify({ model: AI_MODEL, messages, max_tokens: 500 }),
+          body: JSON.stringify({ model: AI_MODEL, messages: msgs, max_tokens: 500 }),
         });
 
         if (res.ok) {
           const data = await res.json();
           const reply = data.choices?.[0]?.message?.content || 'No response';
-          if (authSession) await saveChatMessages(chatSessionId, [
+          await saveChatMessages(chatSessionId, [
             { role: 'user', content: message },
             { role: 'assistant', content: reply },
           ]);
@@ -171,8 +180,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Fallback response
-    if (authSession) await saveChatMessages(chatSessionId, [
+    // Fallback response — always save messages for all visitors
+    await saveChatMessages(chatSessionId, [
       { role: 'user', content: message },
       { role: 'assistant', content: FALLBACK },
     ]);

@@ -1,15 +1,18 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageCircle, X, Send, Bot, User, Loader2, Sparkles,
-  Zap, Headphones, ChevronRight, CheckCircle
+  Zap, Headphones, ChevronRight, CheckCircle, Clock, MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppStore } from '@/store/app-store';
+
+const STORAGE_KEY_SESSION = 'pathgrid_chat_session';
+const STORAGE_KEY_HANDOFF = 'pathgrid_chat_handoff';
 
 export function ChatBot() {
   const { data: session } = useSession();
@@ -25,6 +28,7 @@ export function ChatBot() {
   const resetChat = useAppStore((s) => s.resetChat);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [showHandoff, setShowHandoff] = useState(false);
@@ -32,9 +36,40 @@ export function ChatBot() {
   const [handoffEmail, setHandoffEmail] = useState(session?.user?.email || '');
   const [handoffMessage, setHandoffMessage] = useState('');
   const [handoffSending, setHandoffSending] = useState(false);
-  const [handoffDone, setHandoffDone] = useState(false);
 
   const isAuthenticated = !!session;
+
+  const [handoffData, setHandoffData] = useState<{ name: string; email: string; conversationId?: string } | null>(null);
+
+  // Restore sessionId from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_SESSION);
+    if (saved) setChatSessionId(saved);
+    const savedHandoff = localStorage.getItem(STORAGE_KEY_HANDOFF);
+    if (savedHandoff) {
+      try { setHandoffData(JSON.parse(savedHandoff)); } catch { /* ignore */ }
+    }
+  }, []);
+
+  // Persist sessionId to localStorage
+  useEffect(() => {
+    if (sessionId) localStorage.setItem(STORAGE_KEY_SESSION, sessionId);
+  }, [sessionId]);
+
+  // Fetch past messages when sessionId is known
+  useEffect(() => {
+    if (!sessionId || historyLoaded || messages.length > 0) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/chat?sessionId=${sessionId}`);
+        const history = await res.json();
+        if (Array.isArray(history) && history.length > 0) {
+          setChatMessages(history.map((m: any) => ({ role: m.role, content: m.content })));
+        }
+      } catch { /* silent */ }
+      setHistoryLoaded(true);
+    })();
+  }, [sessionId, historyLoaded]);
 
   useEffect(() => {
     if (open && inputRef.current) {
@@ -46,7 +81,7 @@ export function ChatBot() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, showHandoff]);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || loading) return;
 
@@ -74,7 +109,7 @@ export function ChatBot() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [input, loading, sessionId, locale, addChatMessage, setChatSessionId]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -107,7 +142,9 @@ export function ChatBot() {
       const json = await res.json();
       if (res.ok && json.reply) {
         addChatMessage({ role: 'assistant', content: json.reply });
-        setHandoffDone(true);
+        const data = { name: handoffName.trim(), email: handoffEmail.trim(), conversationId: json.conversationId };
+        setHandoffData(data);
+        localStorage.setItem(STORAGE_KEY_HANDOFF, JSON.stringify(data));
         setShowHandoff(false);
         toast.success('Request sent! We\'ll be in touch.');
       } else {
@@ -126,6 +163,15 @@ export function ChatBot() {
       setHandoffName(session.user.name || '');
       setHandoffEmail(session.user.email || '');
     }
+  };
+
+  const clearHistory = () => {
+    localStorage.removeItem(STORAGE_KEY_SESSION);
+    localStorage.removeItem(STORAGE_KEY_HANDOFF);
+    setHandoffData(null);
+    resetChat();
+    setHistoryLoaded(false);
+    toast.success('Chat history cleared');
   };
 
   return (
@@ -154,9 +200,7 @@ export function ChatBot() {
             className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-96 overflow-hidden"
             style={{ height: 'min(560px, 80vh)' }}
           >
-            {/* Glass background */}
             <div className="absolute inset-0 bg-white/80 dark:bg-navy-900/90 backdrop-blur-2xl border border-navy-200/50 dark:border-navy-700/50 rounded-2xl shadow-2xl" />
-            {/* Gradient border glow */}
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-navy-500/20 via-transparent to-gold-500/20 dark:from-gold-500/10 dark:via-transparent dark:to-navy-500/10 pointer-events-none" />
 
             <div className="relative flex flex-col h-full">
@@ -179,7 +223,9 @@ export function ChatBot() {
                         PathgridAI
                         <Zap className="w-3 h-3 text-gold-500" />
                       </h3>
-                      <p className="text-[10px] text-navy-400 dark:text-navy-500">AI Assistant · Online</p>
+                      <p className="text-[10px] text-navy-400 dark:text-navy-500">
+                        {handoffData ? 'Waiting for team...' : 'AI Assistant · Online'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -190,12 +236,26 @@ export function ChatBot() {
                     >
                       <Headphones className="w-4 h-4 text-navy-400 group-hover:text-gold-500 transition-colors" />
                     </button>
-                    <button onClick={() => { setChatOpen(false); setShowHandoff(false); setHandoffDone(false); }} className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 transition-colors">
+                    <button onClick={() => { setChatOpen(false); setShowHandoff(false); }} className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 transition-colors">
                       <X className="w-4 h-4 text-navy-400" />
                     </button>
                   </div>
                 </div>
               </div>
+
+              {/* Handoff waiting banner */}
+              {handoffData && (
+                <div className="shrink-0 px-4 py-2 bg-gradient-to-r from-gold-500/10 to-gold-600/5 border-b border-gold-500/20">
+                  <div className="flex items-center gap-2 text-xs">
+                    <Clock className="w-3 h-3 text-gold-600 animate-pulse" />
+                    <span className="text-gold-700 dark:text-gold-400 font-medium">
+                      Awaiting team response{handoffData.name ? ` for ${handoffData.name}` : ''}
+                    </span>
+                    <span className="text-gold-500/50 mx-1">·</span>
+                    <span className="text-gold-600/60">Ticket pending</span>
+                  </div>
+                </div>
+              )}
 
               {/* Messages / Handoff */}
               <div className="flex-1 overflow-hidden">
@@ -210,64 +270,58 @@ export function ChatBot() {
                         <p className="text-xs text-navy-400 mt-1">Leave your details and we'll get back to you</p>
                       </div>
 
-                      {handoffDone ? (
-                        <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="text-center py-6">
-                          <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                          <p className="text-sm font-medium text-navy-900 dark:text-white">Request Sent!</p>
-                          <p className="text-xs text-navy-400 mt-1">Our team will contact you shortly.</p>
+                      <div className="space-y-3">
+                        <input
+                          type="text"
+                          value={handoffName}
+                          onChange={(e) => setHandoffName(e.target.value)}
+                          placeholder="Your name"
+                          className="w-full px-3 py-2.5 text-sm rounded-xl border border-navy-200 dark:border-navy-600 bg-white/50 dark:bg-navy-800/50 text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500 placeholder:text-navy-400 backdrop-blur-sm"
+                        />
+                        <input
+                          type="email"
+                          value={handoffEmail}
+                          onChange={(e) => setHandoffEmail(e.target.value)}
+                          placeholder="Your email *"
+                          required
+                          className="w-full px-3 py-2.5 text-sm rounded-xl border border-navy-200 dark:border-navy-600 bg-white/50 dark:bg-navy-800/50 text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500 placeholder:text-navy-400 backdrop-blur-sm"
+                        />
+                        <textarea
+                          value={handoffMessage}
+                          onChange={(e) => setHandoffMessage(e.target.value)}
+                          placeholder="How can we help?"
+                          rows={3}
+                          className="w-full px-3 py-2.5 text-sm rounded-xl border border-navy-200 dark:border-navy-600 bg-white/50 dark:bg-navy-800/50 text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500 placeholder:text-navy-400 backdrop-blur-sm resize-none"
+                        />
+                        <div className="flex gap-2">
                           <button
-                            onClick={() => { setShowHandoff(false); setHandoffDone(false); }}
-                            className="mt-4 text-xs text-gold-600 hover:underline"
+                            onClick={() => setShowHandoff(false)}
+                            className="flex-1 px-3 py-2.5 text-sm rounded-xl border border-navy-200 dark:border-navy-600 text-navy-600 dark:text-navy-300 hover:bg-navy-50 dark:hover:bg-navy-800 transition-colors"
                           >
-                            Back to chat
+                            Cancel
                           </button>
-                        </motion.div>
-                      ) : (
-                        <div className="space-y-3">
-                          <input
-                            type="text"
-                            value={handoffName}
-                            onChange={(e) => setHandoffName(e.target.value)}
-                            placeholder="Your name"
-                            className="w-full px-3 py-2.5 text-sm rounded-xl border border-navy-200 dark:border-navy-600 bg-white/50 dark:bg-navy-800/50 text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500 placeholder:text-navy-400 backdrop-blur-sm"
-                          />
-                          <input
-                            type="email"
-                            value={handoffEmail}
-                            onChange={(e) => setHandoffEmail(e.target.value)}
-                            placeholder="Your email *"
-                            required
-                            className="w-full px-3 py-2.5 text-sm rounded-xl border border-navy-200 dark:border-navy-600 bg-white/50 dark:bg-navy-800/50 text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500 placeholder:text-navy-400 backdrop-blur-sm"
-                          />
-                          <textarea
-                            value={handoffMessage}
-                            onChange={(e) => setHandoffMessage(e.target.value)}
-                            placeholder="How can we help?"
-                            rows={3}
-                            className="w-full px-3 py-2.5 text-sm rounded-xl border border-navy-200 dark:border-navy-600 bg-white/50 dark:bg-navy-800/50 text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500 placeholder:text-navy-400 backdrop-blur-sm resize-none"
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => setShowHandoff(false)}
-                              className="flex-1 px-3 py-2.5 text-sm rounded-xl border border-navy-200 dark:border-navy-600 text-navy-600 dark:text-navy-300 hover:bg-navy-50 dark:hover:bg-navy-800 transition-colors"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={requestHandoff}
-                              disabled={handoffSending}
-                              className="flex-1 px-3 py-2.5 text-sm rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-white font-medium hover:from-gold-600 hover:to-gold-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                              {handoffSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                              Send
-                            </button>
-                          </div>
+                          <button
+                            onClick={requestHandoff}
+                            disabled={handoffSending}
+                            className="flex-1 px-3 py-2.5 text-sm rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-white font-medium hover:from-gold-600 hover:to-gold-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                          >
+                            {handoffSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                            Send
+                          </button>
                         </div>
-                      )}
+                      </div>
                     </motion.div>
                   </div>
                 ) : (
                   <div className="h-full p-4 overflow-y-auto custom-scrollbar">
+                    {messages.length === 0 && (
+                      <div className="text-center py-8">
+                        <MessageSquare className="w-10 h-10 text-navy-300 dark:text-navy-600 mx-auto mb-3" />
+                        <p className="text-sm text-navy-400 dark:text-navy-500">
+                          {handoffData ? 'Waiting for a team member to respond. Your messages are saved.' : 'Ask me anything about Pathgrid Agency!'}
+                        </p>
+                      </div>
+                    )}
                     {messages.map((msg, i) => (
                       <motion.div
                         key={i}
@@ -349,10 +403,18 @@ export function ChatBot() {
                       className="flex items-center gap-1 text-[10px] text-navy-400 hover:text-gold-500 transition-colors"
                     >
                       <Headphones className="w-3 h-3" />
-                      Talk to a human
+                      {handoffData ? 'Resubmit request' : 'Talk to a human'}
                       <ChevronRight className="w-2.5 h-2.5" />
                     </button>
-                    <span className="text-[10px] text-navy-300 dark:text-navy-600">Powered by Groq AI</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={clearHistory}
+                        className="text-[10px] text-navy-300 dark:text-navy-600 hover:text-red-400 transition-colors"
+                      >
+                        Clear
+                      </button>
+                      <span className="text-[10px] text-navy-300 dark:text-navy-600">Powered by Groq AI</span>
+                    </div>
                   </div>
                 </div>
               )}
