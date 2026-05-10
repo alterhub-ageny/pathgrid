@@ -21,8 +21,9 @@ export default function AdminServicesPage() {
       formFields={[
         { key: 'title', label: t('admin.fields.title') },
         { key: 'slug', label: t('admin.fields.slug') },
-        { key: 'description', label: t('admin.fields.description'), type: 'textarea' },
+        { key: 'description', label: t('admin.fields.description'), type: 'textarea', aiPrompt: 'Write a 2-3 sentence service description for a digital agency. Keep it professional and compelling.' },
         { key: 'icon', label: t('admin.fields.icon') },
+        { key: 'image', label: t('admin.fields.image'), type: 'image' },
         { key: 'priceTier', label: t('admin.fields.priceTier') },
         { key: 'features', label: t('admin.fields.features') },
         { key: 'order', label: t('admin.fields.order'), type: 'number' },

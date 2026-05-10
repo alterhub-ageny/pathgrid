@@ -23,6 +23,7 @@ export default function AdminClientsPage() {
       formFields={[
         { key: 'name', label: t('admin.fields.name') },
         { key: 'email', label: t('admin.fields.email') },
+        { key: 'password', label: 'Password', type: 'password' },
         { key: 'company', label: t('admin.fields.company') },
         { key: 'phone', label: t('admin.fields.phone') },
         { key: 'role', label: t('admin.fields.role') },

@@ -23,11 +23,13 @@ export default function AdminInvoicesPage() {
       ]}
       formFields={[
         { key: 'number', label: t('admin.fields.number') },
+        { key: 'clientId', label: 'Client', type: 'select', optionsFromApi: 'clients', optionsLabelKey: 'name', optionsValueKey: 'id' },
         { key: 'amount', label: t('admin.fields.amount'), type: 'number' },
         { key: 'currency', label: t('admin.fields.currency') },
-        { key: 'status', label: t('admin.fields.status') },
+        { key: 'type', label: 'Type', type: 'select', options: ['income', 'expense'] },
+        { key: 'status', label: t('admin.fields.status'), type: 'select', options: ['draft', 'sent', 'paid', 'overdue', 'cancelled'] },
+        { key: 'dueDate', label: t('admin.fields.dueDate'), type: 'date' },
         { key: 'description', label: t('admin.fields.description'), type: 'textarea' },
-        { key: 'dueDate', label: t('admin.fields.dueDate') },
       ]}
     />
   );

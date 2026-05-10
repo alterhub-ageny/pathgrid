@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, Upload, Loader2, Download, FileUp } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Upload, Loader2, Download, FileUp, Wand2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,10 @@ interface FormField {
   label: string;
   type?: string;
   options?: string[];
+  optionsFromApi?: string;
+  optionsLabelKey?: string;
+  optionsValueKey?: string;
+  aiPrompt?: string;
 }
 
 interface CrudTableProps {
@@ -44,6 +48,10 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
   const [importing, setImporting] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   const [richtextValues, setRichtextValues] = useState<Record<string, string>>({});
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [selectOptions, setSelectOptions] = useState<Record<string, any[]>>({});
+  const [aiGenerating, setAiGenerating] = useState<Record<string, boolean>>({});
 
   const fetchData = useCallback(async () => {
     if (initialData) return;
@@ -68,8 +76,22 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
   }, [initialData]);
 
   useEffect(() => {
-    if (!modal.open) { setImagePreviews({}); setRichtextValues({}); }
+    if (!modal.open) { setImagePreviews({}); setRichtextValues({}); setSubmitting(false); }
   }, [modal.open]);
+
+  useEffect(() => {
+    if (modal.open) {
+      formFields?.forEach(async (f) => {
+        if (f.optionsFromApi && !selectOptions[f.optionsFromApi]) {
+          try {
+            const res = await fetch(`/api/admin/data?type=${f.optionsFromApi}`);
+            const json = await res.json();
+            setSelectOptions(prev => ({ ...prev, [f.optionsFromApi!]: Array.isArray(json) ? json : [] }));
+          } catch { /* ignore */ }
+        }
+      });
+    }
+  }, [modal.open, formFields, selectOptions]);
 
   useEffect(() => {
     if (modal.edit && modal.open) {
@@ -130,6 +152,7 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
       }
     });
 
+    setSubmitting(true);
     try {
       if (modal.edit?.id) {
         await callApi('update', { id: modal.edit.id, ...item });
@@ -143,13 +166,21 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
       else setTimeout(() => window.location.reload(), 500);
     } catch {
       toast.error('Failed to save');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
+    setDeleteConfirm(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
     try {
-      await callApi('delete', { id });
+      await callApi('delete', { id: deleteConfirm });
       toast.success('Deleted');
+      setDeleteConfirm(null);
       if (!initialData) fetchData();
       else setTimeout(() => window.location.reload(), 500);
     } catch {
@@ -226,6 +257,22 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
     }
   };
 
+  const handleAiGenerate = async (field: FormField) => {
+    setAiGenerating(prev => ({ ...prev, [field.key]: true }));
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: field.aiPrompt, sessionId: 'ai-generate' }),
+      });
+      const json = await res.json();
+      if (json.reply) {
+        setRichtextValues(prev => ({ ...prev, [field.key]: json.reply }));
+      }
+    } catch { /* ignore */ }
+    finally { setAiGenerating(prev => ({ ...prev, [field.key]: false })); }
+  };
+
   const renderFormField = (field: FormField) => {
     const currentValue = modal.edit?.[field.key] || '';
     const previewUrl = imagePreviews[field.key] || currentValue;
@@ -233,14 +280,27 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
     if (field.type === 'textarea') {
       return (
         <div key={field.key}>
-          <label className="block text-sm font-medium text-navy-700 dark:text-white mb-1.5">{field.label}</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-sm font-medium text-navy-700 dark:text-white">{field.label}</label>
+            {field.aiPrompt && (
+              <button type="button" onClick={() => handleAiGenerate(field)} disabled={aiGenerating[field.key]}
+                className="flex items-center gap-1 text-xs text-navy-400 hover:text-navy-600 dark:hover:text-navy-200 transition-colors disabled:opacity-50">
+                {aiGenerating[field.key] ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                AI Generate
+              </button>
+            )}
+          </div>
           <textarea name={field.key} defaultValue={currentValue} rows={4}
             className="w-full px-4 py-2.5 rounded-lg border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-navy-500 resize-none" />
         </div>
       );
     }
 
-    if (field.type === 'select') {
+    if (field.type === 'select' || field.optionsFromApi) {
+      const apiOptions = field.optionsFromApi ? (selectOptions[field.optionsFromApi] || []) : [];
+      const valueKey = field.optionsValueKey || 'id';
+      const labelKey = field.optionsLabelKey || 'name';
+
       return (
         <div key={field.key}>
           <label className="block text-sm font-medium text-navy-700 dark:text-white mb-1.5">{field.label}</label>
@@ -249,6 +309,9 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
             <option value="">Select {field.label}</option>
             {field.options?.map((opt) => (
               <option key={opt} value={opt}>{opt}</option>
+            ))}
+            {apiOptions.map((opt: any) => (
+              <option key={opt[valueKey]} value={opt[valueKey]}>{opt[labelKey]}</option>
             ))}
           </select>
         </div>
@@ -268,7 +331,16 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
     if (field.type === 'richtext') {
       return (
         <div key={field.key}>
-          <label className="block text-sm font-medium text-navy-700 dark:text-white mb-1.5">{field.label}</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-sm font-medium text-navy-700 dark:text-white">{field.label}</label>
+            {field.aiPrompt && (
+              <button type="button" onClick={() => handleAiGenerate(field)} disabled={aiGenerating[field.key]}
+                className="flex items-center gap-1 text-xs text-navy-400 hover:text-navy-600 dark:hover:text-navy-200 transition-colors disabled:opacity-50">
+                {aiGenerating[field.key] ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                AI Generate
+              </button>
+            )}
+          </div>
           <RichTextEditor
             value={richtextValues[field.key] ?? modal.edit?.[field.key] ?? ''}
             onChange={(val) => setRichtextValues((prev) => ({ ...prev, [field.key]: val }))}
@@ -370,7 +442,7 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
                       className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 transition-colors">
                       <Edit2 className="w-4 h-4 text-navy-400" />
                     </button>
-                    <button onClick={() => handleDelete(row.id)}
+                    <button onClick={() => setDeleteConfirm(row.id)}
                       className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-1">
                       <Trash2 className="w-4 h-4 text-red-400" />
                     </button>
@@ -388,8 +460,22 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
       <Modal open={modal.open} onClose={() => setModal({ open: false })} title={modal.edit ? t('common.edit') : t('common.create')} size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
           {formFields?.map(renderFormField)}
-          <Button type="submit" className="w-full">{modal.edit ? t('common.save') : t('common.create')}</Button>
+          <Button type="submit" loading={submitting} className="w-full">{modal.edit ? t('common.save') : t('common.create')}</Button>
         </form>
+      </Modal>
+
+      <Modal open={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Confirm Delete" size="sm">
+        <p className="text-navy-600 dark:text-navy-300 text-sm mb-6">Are you sure you want to delete this item? This action cannot be undone.</p>
+        <div className="flex gap-3">
+          <button onClick={() => setDeleteConfirm(null)}
+            className="flex-1 px-4 py-2.5 rounded-xl border border-navy-200 dark:border-navy-600 text-navy-700 dark:text-white hover:bg-navy-50 dark:hover:bg-navy-800 transition-colors text-sm font-medium">
+            Cancel
+          </button>
+          <button onClick={confirmDelete}
+            className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors text-sm font-medium">
+            Delete
+          </button>
+        </div>
       </Modal>
     </div>
   );

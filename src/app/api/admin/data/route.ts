@@ -14,6 +14,9 @@ const models: Record<string, any> = {
   invoices: prisma.invoice,
   leads: prisma.lead,
   tasks: prisma.task,
+  'calendar-events': prisma.calendarEvent,
+  transactions: prisma.transaction,
+  settings: prisma.siteSetting,
 };
 
 export async function GET(request: Request) {
@@ -52,7 +55,10 @@ export async function POST(request: Request) {
       }
       result = await model.create({ data });
     } else if (action === 'update') {
-      const { id, ...updateData } = data;
+      const { id, password, ...updateData } = data;
+      if (type === 'clients' && password) {
+        updateData.passwordHash = await bcrypt.hash(password, 12);
+      }
       result = await model.update({ where: { id }, data: updateData });
     } else if (action === 'delete') {
       result = await model.delete({ where: { id: data.id } });

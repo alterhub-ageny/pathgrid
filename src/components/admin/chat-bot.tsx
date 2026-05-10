@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
 
@@ -12,6 +13,8 @@ interface ChatMessage {
 
 export function ChatBot() {
   const { data: session } = useSession();
+  const pathname = usePathname();
+  const locale = pathname?.match(/^\/(en|fr|ar)/)?.[1] || 'en';
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: 'assistant', content: 'Hi! I\'m PathgridAI. How can I help you today?' },
@@ -48,7 +51,7 @@ export function ChatBot() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, sessionId }),
+        body: JSON.stringify({ message: text, sessionId, locale }),
       });
       const json = await res.json();
       if (res.status === 401) {

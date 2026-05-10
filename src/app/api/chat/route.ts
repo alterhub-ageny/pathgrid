@@ -7,7 +7,15 @@ const AI_API_KEY = process.env.AI_API_KEY || '';
 const AI_API_ENDPOINT = process.env.AI_API_ENDPOINT || 'https://api.openai.com/v1/chat/completions';
 const AI_MODEL = process.env.AI_MODEL || 'gpt-4o-mini';
 
-const SYSTEM_PROMPT = `You are PathgridAI, an advanced AI assistant for the Pathgrid Agency platform. You help admins, staff, and clients with their questions about the platform, digital agency operations, project management, and general business queries.
+function buildSystemPrompt(locale: string): string {
+  const langMap: Record<string, string> = {
+    en: 'Respond in English.',
+    fr: 'Répondez en français.',
+    ar: 'رد باللغة العربية.',
+  };
+  const langInstruction = langMap[locale] || langMap.en;
+
+  return `You are PathgridAI, an advanced AI assistant for the Pathgrid Agency platform. You help admins, staff, and clients with their questions about the platform, digital agency operations, project management, and general business queries. ${langInstruction}
 
 About Pathgrid Agency:
 - A full-service digital agency specializing in strategy, design, and technology
@@ -25,6 +33,7 @@ You can help with:
 6. Creative and design guidance
 
 Be friendly, professional, and concise. Use markdown for formatting when helpful. If you don't know something, be honest about it. Keep responses under 300 words unless asked for detail.`;
+}
 
 const FALLBACK = 'Hi! I\'m PathgridAI. How can I help you today? Feel free to ask about our services, team, or anything related to Pathgrid Agency — or just say hello!';
 
@@ -53,7 +62,7 @@ async function saveChatMessages(sessionId: string, messages: { role: string; con
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    const { message, sessionId } = await request.json();
+    const { message, sessionId, locale } = await request.json();
     if (!message) return NextResponse.json({ error: 'Message required' }, { status: 400 });
 
     const chatSessionId = sessionId || `session_${Date.now()}`;
@@ -68,7 +77,7 @@ export async function POST(request: Request) {
         const recent = session ? await getChatHistory(chatSessionId) : [];
 
         const messages = [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: buildSystemPrompt(locale || 'en') },
           ...recent.map((m: any) => ({ role: m.role, content: m.content })),
           { role: 'user', content: message },
         ];

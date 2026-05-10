@@ -1,51 +1,115 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Legend
 } from 'recharts';
-import { Plus, Download, TrendingUp, TrendingDown, DollarSign, FileText } from 'lucide-react';
+import { Plus, Download, TrendingUp, TrendingDown, DollarSign, FileText, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency, formatDate, cn } from '@/lib/utils';
-
-const monthlyData = [
-  { month: 'Jan', revenue: 45000, expenses: 28000, profit: 17000 },
-  { month: 'Feb', revenue: 52000, expenses: 31000, profit: 21000 },
-  { month: 'Mar', revenue: 48000, expenses: 27000, profit: 21000 },
-  { month: 'Apr', revenue: 61000, expenses: 33000, profit: 28000 },
-  { month: 'May', revenue: 58000, expenses: 29000, profit: 29000 },
-  { month: 'Jun', revenue: 72000, expenses: 35000, profit: 37000 },
-  { month: 'Jul', revenue: 68000, expenses: 32000, profit: 36000 },
-  { month: 'Aug', revenue: 75000, expenses: 38000, profit: 37000 },
-  { month: 'Sep', revenue: 82000, expenses: 36000, profit: 46000 },
-  { month: 'Oct', revenue: 78000, expenses: 34000, profit: 44000 },
-  { month: 'Nov', revenue: 85000, expenses: 39000, profit: 46000 },
-  { month: 'Dec', revenue: 95000, expenses: 42000, profit: 53000 },
-];
-
-const invoices = [
-  { id: '1', number: 'INV-2025-0042', client: 'TechVentures Inc', amount: 15000, status: 'paid', date: '2026-04-28' },
-  { id: '2', number: 'INV-2025-0043', client: 'Elevate Brand Studio', amount: 25000, status: 'sent', date: '2026-05-01' },
-  { id: '3', number: 'INV-2025-0044', client: 'FinFlow Inc', amount: 12000, status: 'overdue', date: '2026-04-15' },
-  { id: '4', number: 'INV-2025-0045', client: 'NexGen Solutions', amount: 35000, status: 'draft', date: '2026-05-05' },
-  { id: '5', number: 'INV-2025-0046', client: 'HealthPlus', amount: 8000, status: 'paid', date: '2026-04-20' },
-];
+import { formatCurrency, formatDate } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function AccountingPage() {
   const { t } = useTranslation();
   const [showInvoice, setShowInvoice] = useState(false);
   const [showTransaction, setShowTransaction] = useState(false);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const totalRevenue = monthlyData.reduce((s, d) => s + d.revenue, 0);
-  const totalExpenses = monthlyData.reduce((s, d) => s + d.expenses, 0);
-  const netProfit = totalRevenue - totalExpenses;
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [txRes, invRes] = await Promise.all([
+        fetch('/api/admin/data?type=transactions'),
+        fetch('/api/admin/data?type=invoices'),
+      ]);
+      const txs = await txRes.json();
+      const invs = await invRes.json();
+      setTransactions(Array.isArray(txs) ? txs : []);
+      setInvoices(Array.isArray(invs) ? invs : []);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthlyData = months.map((month, i) => {
+    const monthTx = transactions.filter((tx: any) => {
+      const d = new Date(tx.date);
+      return d.getMonth() === i && d.getFullYear() === 2026;
+    });
+    const revenue = monthTx.filter((tx: any) => tx.type === 'income').reduce((s: number, tx: any) => s + tx.amount, 0);
+    const expenses = monthTx.filter((tx: any) => tx.type === 'expense').reduce((s: number, tx: any) => s + tx.amount, 0);
+    return { month, revenue, expenses, profit: revenue - expenses };
+  });
+
+  const totalRevenue = transactions.filter((tx: any) => tx.type === 'income').reduce((s: number, tx: any) => s + tx.amount, 0);
+  const totalExpenses = transactions.filter((tx: any) => tx.type === 'expense').reduce((s: number, tx: any) => s + tx.amount, 0);
+  const pendingInvoices = invoices.filter((i: any) => i.status !== 'paid').length;
+
+  const handleCreateInvoice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    const form = e.target as HTMLFormElement;
+    const fd = new FormData(form);
+    try {
+      await fetch('/api/admin/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'invoices', action: 'create',
+          data: {
+            number: fd.get('number'),
+            amount: Number(fd.get('amount')),
+            description: fd.get('description'),
+            dueDate: fd.get('dueDate') || undefined,
+            status: 'draft',
+            clientId: 'placeholder',
+          },
+        }),
+      });
+      toast.success('Invoice created');
+      setShowInvoice(false);
+      fetchData();
+    } catch { toast.error('Failed to create invoice'); }
+    finally { setSaving(false); }
+  };
+
+  const handleCreateTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    const form = e.target as HTMLFormElement;
+    const fd = new FormData(form);
+    try {
+      await fetch('/api/admin/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'transactions', action: 'create',
+          data: {
+            label: fd.get('label'),
+            amount: Number(fd.get('amount')),
+            type: fd.get('type') || 'expense',
+            category: fd.get('category') || '',
+            date: new Date().toISOString(),
+          },
+        }),
+      });
+      toast.success('Transaction added');
+      setShowTransaction(false);
+      fetchData();
+    } catch { toast.error('Failed to add transaction'); }
+    finally { setSaving(false); }
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload?.length) {
@@ -60,6 +124,8 @@ export default function AccountingPage() {
     }
     return null;
   };
+
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-navy-400" /></div>;
 
   return (
     <div className="space-y-8">
@@ -82,15 +148,15 @@ export default function AccountingPage() {
         {[
           { label: t('accounting.totalRevenue'), value: totalRevenue, icon: TrendingUp, color: 'text-green-600' },
           { label: t('accounting.totalExpenses'), value: totalExpenses, icon: TrendingDown, color: 'text-red-600' },
-          { label: t('accounting.netProfit'), value: netProfit, icon: DollarSign, color: 'text-blue-600' },
-          { label: t('accounting.pendingInvoices'), value: invoices.filter(i => i.status !== 'paid').length, icon: FileText, color: 'text-orange-600' },
+          { label: t('accounting.netProfit'), value: totalRevenue - totalExpenses, icon: DollarSign, color: 'text-blue-600' },
+          { label: t('accounting.pendingInvoices'), value: pendingInvoices, icon: FileText, color: 'text-orange-600' },
         ].map((stat, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
             <Card className="p-5">
               <div className="flex items-center justify-between mb-3">
                 <stat.icon className={`w-5 h-5 ${stat.color}`} />
               </div>
-              <p className="text-2xl font-bold font-serif">{formatCurrency(stat.value)}</p>
+              <p className="text-2xl font-bold font-serif">{typeof stat.value === 'number' ? formatCurrency(stat.value) : stat.value}</p>
               <p className="text-sm text-navy-400 mt-1">{stat.label}</p>
             </Card>
           </motion.div>
@@ -111,7 +177,6 @@ export default function AccountingPage() {
             <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
             <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
             <Area type="monotone" dataKey="revenue" stroke="#1a2f5e" fill="url(#profitGrad)" strokeWidth={2} name="Revenue" />
             <Area type="monotone" dataKey="expenses" stroke="#d4a61e" fill="url(#profitGrad)" strokeWidth={2} name="Expenses" />
             <Area type="monotone" dataKey="profit" stroke="#00b8d4" fill="url(#profitGrad)" strokeWidth={2} name="Profit" />
@@ -122,7 +187,13 @@ export default function AccountingPage() {
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">{t('accounting.invoices')}</h3>
-          <button className="flex items-center gap-1 text-sm text-navy-400 hover:text-navy-600 dark:hover:text-navy-200 transition-colors">
+          <button onClick={() => {
+            const csv = [['Number','Amount','Status','Date'], ...invoices.map((i: any) => [i.number, i.amount, i.status, i.createdAt])].map(r => r.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'invoices.csv'; a.click();
+            URL.revokeObjectURL(url);
+          }} className="flex items-center gap-1 text-sm text-navy-400 hover:text-navy-600 dark:hover:text-navy-200 transition-colors">
             <Download className="w-4 h-4" /> {t('admin.exportCsv')}
           </button>
         </div>
@@ -131,24 +202,22 @@ export default function AccountingPage() {
             <thead>
               <tr className="border-b border-navy-100 dark:border-navy-700">
                 <th className="text-left py-3 font-medium text-navy-400">Invoice</th>
-                <th className="text-left py-3 font-medium text-navy-400">Client</th>
                 <th className="text-right py-3 font-medium text-navy-400">Amount</th>
                 <th className="text-center py-3 font-medium text-navy-400">Status</th>
                 <th className="text-right py-3 font-medium text-navy-400">Date</th>
               </tr>
             </thead>
             <tbody>
-              {invoices.map((inv) => (
+              {invoices.map((inv: any) => (
                 <tr key={inv.id} className="border-b border-navy-50 dark:border-navy-800 hover:bg-navy-50 dark:hover:bg-navy-800/50 transition-colors">
                   <td className="py-3 font-medium">{inv.number}</td>
-                  <td className="py-3 text-navy-500 dark:text-navy-300">{inv.client}</td>
                   <td className="py-3 text-right font-medium">{formatCurrency(inv.amount)}</td>
                   <td className="py-3 text-center">
                     <Badge variant={inv.status === 'paid' ? 'success' : inv.status === 'overdue' ? 'danger' : inv.status === 'sent' ? 'info' : 'warning'}>
                       {inv.status}
                     </Badge>
                   </td>
-                  <td className="py-3 text-right text-navy-400">{formatDate(inv.date)}</td>
+                  <td className="py-3 text-right text-navy-400">{formatDate(inv.createdAt)}</td>
                 </tr>
               ))}
             </tbody>
@@ -157,17 +226,17 @@ export default function AccountingPage() {
       </Card>
 
       <Modal open={showInvoice} onClose={() => setShowInvoice(false)} title={t('accounting.createInvoice')}>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); setShowInvoice(false); }}>
-          <Input name="client" label="Client Name" required />
+        <form className="space-y-4" onSubmit={handleCreateInvoice}>
+          <Input name="number" label="Invoice Number" required />
           <Input name="amount" label="Amount ($)" type="number" required />
           <Input name="description" label="Description" />
           <Input name="dueDate" label="Due Date" type="date" />
-          <Button type="submit" className="w-full">{t('common.create')}</Button>
+          <Button type="submit" loading={saving} className="w-full">{t('common.create')}</Button>
         </form>
       </Modal>
 
       <Modal open={showTransaction} onClose={() => setShowTransaction(false)} title={t('accounting.addTransaction')}>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); setShowTransaction(false); }}>
+        <form className="space-y-4" onSubmit={handleCreateTransaction}>
           <Input name="label" label="Label" required />
           <Input name="amount" label="Amount ($)" type="number" required />
           <div>
@@ -178,7 +247,7 @@ export default function AccountingPage() {
             </select>
           </div>
           <Input name="category" label="Category" />
-          <Button type="submit" className="w-full">{t('common.create')}</Button>
+          <Button type="submit" loading={saving} className="w-full">{t('common.create')}</Button>
         </form>
       </Modal>
     </div>

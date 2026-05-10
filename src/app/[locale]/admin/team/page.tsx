@@ -26,6 +26,7 @@ export default function AdminTeamPage() {
         { key: 'image', label: t('admin.fields.image'), type: 'image' },
         { key: 'email', label: t('admin.fields.email') },
         { key: 'linkedin', label: t('admin.fields.linkedin') },
+        { key: 'twitter', label: t('admin.fields.twitter') },
         { key: 'order', label: t('admin.fields.order'), type: 'number' },
         { key: 'active', label: t('admin.fields.active'), type: 'checkbox' },
       ]}

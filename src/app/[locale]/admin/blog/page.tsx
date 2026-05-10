@@ -32,8 +32,8 @@ export default function AdminBlogPage() {
       formFields={[
         { key: 'title', label: t('admin.fields.title') },
         { key: 'slug', label: t('admin.fields.slug') },
-        { key: 'excerpt', label: t('admin.fields.excerpt'), type: 'textarea' },
-        { key: 'content', label: t('admin.fields.content'), type: 'richtext' },
+        { key: 'excerpt', label: t('admin.fields.excerpt'), type: 'textarea', aiPrompt: 'Write a 2-sentence excerpt for a blog post about digital agency topics. Keep it concise.' },
+        { key: 'content', label: t('admin.fields.content'), type: 'richtext', aiPrompt: 'Write a full blog post about digital agency services, strategy, and best practices. Use markdown formatting with headings, lists, and paragraphs.' },
         { key: 'image', label: t('admin.fields.image'), type: 'image' },
         { key: 'category', label: t('admin.fields.category'), type: 'select', options: categories },
         { key: 'tags', label: t('admin.fields.tags') },
