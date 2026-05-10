@@ -51,7 +51,7 @@ export function AISummary() {
         </div>
         <button onClick={fetchSummary} disabled={refreshing}
           className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 transition-colors">
-          <RefreshCw className={`w-4 h-4 text-navy-400 ${refreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 text-navy-400 dark:text-navy-200 ${refreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
       {error && (
@@ -61,7 +61,7 @@ export function AISummary() {
         </div>
       )}
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-navy-400">
+        <div className="flex items-center gap-2 text-sm text-navy-400 dark:text-navy-200">
           <Loader2 className="w-4 h-4 animate-spin" />
           Generating summary...
         </div>

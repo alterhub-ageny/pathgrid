@@ -123,16 +123,16 @@ export function AdminHeader() {
                   <div className="flex items-center justify-between px-4 py-3 border-b border-navy-100 dark:border-navy-700">
                     <h3 className="text-sm font-semibold">Notifications</h3>
                     {list.length > 0 && (
-                      <button onClick={markAllRead} className="text-xs text-navy-400 hover:text-navy-600 dark:hover:text-navy-200">
+                      <button onClick={markAllRead} className="text-xs text-navy-400 dark:text-navy-200 hover:text-navy-600 dark:hover:text-navy-200">
                         Mark all read
                       </button>
                     )}
                   </div>
                   <div className="max-h-72 overflow-y-auto">
                     {loadingNotifs && list.length === 0 ? (
-                      <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-navy-400" /></div>
+                      <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-navy-400 dark:text-navy-200" /></div>
                     ) : list.length === 0 ? (
-                      <p className="text-center text-sm text-navy-400 py-8">No notifications</p>
+                      <p className="text-center text-sm text-navy-400 dark:text-navy-200 py-8">No notifications</p>
                     ) : (
                       list.map((n) => {
                         const Icon = icons[n.type] || Info;
@@ -144,7 +144,7 @@ export function AdminHeader() {
                             </span>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm text-navy-900 dark:text-white">{n.title}</p>
-                              {n.message && <p className="text-xs text-navy-400 mt-0.5">{n.message}</p>}
+                              {n.message && <p className="text-xs text-navy-400 dark:text-navy-200 mt-0.5">{n.message}</p>}
                               <p className="text-xs text-navy-300 mt-0.5">{formatRelativeTime(n.createdAt)}</p>
                             </div>
                             <button onClick={(e) => { e.stopPropagation(); markRead(n.id); }} className="shrink-0 mt-1">
@@ -162,11 +162,11 @@ export function AdminHeader() {
           <div className="flex items-center gap-3 pl-3 border-l border-navy-100 dark:border-navy-700">
             <div className="text-right">
               <p className="text-sm font-medium text-navy-900 dark:text-white">{session?.user?.name || 'Admin'}</p>
-              <p className="text-xs text-navy-400">{session?.user?.email}</p>
+              <p className="text-xs text-navy-400 dark:text-navy-200">{session?.user?.email}</p>
             </div>
             <button
               onClick={() => signOut({ callbackUrl: '/' })}
-              className="p-2 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-800 transition-colors text-navy-500"
+              className="p-2 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-800 transition-colors text-navy-500 dark:text-navy-200"
             >
               <LogOut className="w-4 h-4" />
             </button>

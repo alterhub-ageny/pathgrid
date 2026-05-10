@@ -142,9 +142,9 @@ export function TaskManager() {
 
       <div className="space-y-1.5 max-h-60 overflow-y-auto">
         {loading ? (
-          <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-navy-400" /></div>
+          <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-navy-400 dark:text-navy-200" /></div>
         ) : tasks.length === 0 ? (
-          <p className="text-sm text-navy-400 text-center py-4">No tasks yet</p>
+          <p className="text-sm text-navy-400 dark:text-navy-200 text-center py-4">No tasks yet</p>
         ) : (
           tasks.map((task, i) => (
             <motion.div key={task.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}

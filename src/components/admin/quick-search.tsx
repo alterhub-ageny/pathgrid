@@ -89,7 +89,7 @@ export function QuickSearch({ locale }: { locale: string }) {
   return (
     <>
       <button onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 text-xs text-navy-400 bg-navy-100 dark:bg-navy-800 rounded-lg hover:bg-navy-200 dark:hover:bg-navy-700 transition-colors">
+        className="flex items-center gap-2 px-3 py-1.5 text-xs text-navy-400 dark:text-navy-200 bg-navy-100 dark:bg-navy-800 rounded-lg hover:bg-navy-200 dark:hover:bg-navy-700 transition-colors">
         <Search className="w-3.5 h-3.5" />
         Search...
         <kbd className="px-1 py-0.5 text-[10px] rounded bg-navy-200 dark:bg-navy-600 text-navy-500 dark:text-navy-300 ml-4">⌘K</kbd>
@@ -106,16 +106,16 @@ export function QuickSearch({ locale }: { locale: string }) {
               className="relative w-full max-w-xl bg-white dark:bg-navy-800 rounded-2xl shadow-2xl border border-navy-100 dark:border-navy-700 overflow-hidden"
             >
               <div className="flex items-center gap-3 px-4 py-3 border-b border-navy-100 dark:border-navy-700">
-                <Search className="w-4 h-4 text-navy-400 shrink-0" />
+                <Search className="w-4 h-4 text-navy-400 dark:text-navy-200 shrink-0" />
                 <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search leads, clients, invoices, notes..."
                   className="flex-1 text-sm bg-transparent outline-none text-navy-900 dark:text-white placeholder:text-navy-400" />
-                {loading && <Loader2 className="w-4 h-4 animate-spin text-navy-400" />}
-                <kbd className="px-1.5 py-0.5 text-[10px] rounded bg-navy-100 dark:bg-navy-700 text-navy-400">ESC</kbd>
+                {loading && <Loader2 className="w-4 h-4 animate-spin text-navy-400 dark:text-navy-200" />}
+                <kbd className="px-1.5 py-0.5 text-[10px] rounded bg-navy-100 dark:bg-navy-700 text-navy-400 dark:text-navy-200">ESC</kbd>
               </div>
               <div className="max-h-80 overflow-y-auto">
                 {query.length >= 2 && totalResults === 0 && !loading && (
-                  <p className="text-sm text-navy-400 text-center py-8">No results found</p>
+                  <p className="text-sm text-navy-400 dark:text-navy-200 text-center py-8">No results found</p>
                 )}
                 {searchTypes.map((t) => {
                   const items = results[t.key] || [];
@@ -123,16 +123,16 @@ export function QuickSearch({ locale }: { locale: string }) {
                   return (
                     <div key={t.key}>
                       <div className="flex items-center gap-2 px-4 py-2 bg-navy-50 dark:bg-navy-900/50">
-                        <t.icon className="w-3.5 h-3.5 text-navy-400" />
-                        <span className="text-xs font-medium text-navy-500 dark:text-navy-400 uppercase tracking-wider">{t.label}</span>
+                        <t.icon className="w-3.5 h-3.5 text-navy-400 dark:text-navy-200" />
+                        <span className="text-xs font-medium text-navy-500 dark:text-navy-300 uppercase tracking-wider">{t.label}</span>
                       </div>
                       {items.map((item: any) => (
                         <button key={item.id} onClick={() => handleSelect(t.key, item.id)}
                           className="w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-navy-50 dark:hover:bg-navy-700/50 transition-colors border-b border-navy-50 dark:border-navy-700/50 last:border-0">
-                          <t.icon className="w-4 h-4 text-navy-400 shrink-0" />
+                          <t.icon className="w-4 h-4 text-navy-400 dark:text-navy-200 shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-navy-900 dark:text-white truncate">{item.name || item.title || item.number}</p>
-                            <p className="text-xs text-navy-400 truncate">{item.email || item.company || item.description || item.category || ''}</p>
+                            <p className="text-xs text-navy-400 dark:text-navy-200 truncate">{item.email || item.company || item.description || item.category || ''}</p>
                           </div>
                         </button>
                       ))}

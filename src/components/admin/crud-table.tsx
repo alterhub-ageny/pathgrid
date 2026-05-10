@@ -393,7 +393,7 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
                   if (file) handleImageUpload(field.key, file);
                 }} />
             </label>
-            {uploading === field.key && <Loader2 className="w-4 h-4 animate-spin text-navy-400" />}
+            {uploading === field.key && <Loader2 className="w-4 h-4 animate-spin text-navy-400 dark:text-navy-200" />}
           </div>
         </div>
       );
@@ -431,7 +431,7 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
       </div>
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-400 dark:text-navy-200" />
         <input type="text" placeholder={t('common.search')} value={search} onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-sm focus:outline-none focus:ring-2 focus:ring-navy-500" />
       </div>
@@ -460,19 +460,19 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
                     if (selectedIds.size === filtered.length) { setSelectedIds(new Set()); }
                     else { setSelectedIds(new Set(filtered.map((r: any) => r.id).filter(Boolean))); }
                   }} className="p-0.5 rounded hover:bg-navy-200 dark:hover:bg-navy-600 transition-colors">
-                    {selectedIds.size === filtered.length && filtered.length > 0 ? <CheckSquare className="w-4 h-4 text-navy-500" /> : <Square className="w-4 h-4 text-navy-400" />}
+                    {selectedIds.size === filtered.length && filtered.length > 0 ? <CheckSquare className="w-4 h-4 text-navy-500 dark:text-navy-200" /> : <Square className="w-4 h-4 text-navy-400 dark:text-navy-200" />}
                   </button>
                 </th>
                 {columns.map((col) => (
-                  <th key={col.key} className="text-left py-3 px-4 font-medium text-navy-400">{col.label}</th>
+                  <th key={col.key} className="text-left py-3 px-4 font-medium text-navy-400 dark:text-navy-200">{col.label}</th>
                 ))}
-                <th className="text-right py-3 px-4 font-medium text-navy-400">Actions</th>
+                <th className="text-right py-3 px-4 font-medium text-navy-400 dark:text-navy-200">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={columns.length + 2} className="py-12 text-center text-navy-400">
-                  <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+<tr><td colSpan={columns.length + 2} className="py-12 text-center text-navy-400 dark:text-navy-200">
+                  <Loader2 className="w-5 h-5 animate-spin mx-auto dark:text-navy-200" />
                 </td></tr>
               ) : filtered.map((row, i) => (
                 <motion.tr key={row.id || i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
@@ -483,7 +483,7 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
                       if (next.has(row.id)) next.delete(row.id); else next.add(row.id);
                       setSelectedIds(next);
                     }} className="p-0.5 rounded hover:bg-navy-200 dark:hover:bg-navy-600 transition-colors">
-                      {selectedIds.has(row.id) ? <CheckSquare className="w-4 h-4 text-navy-500" /> : <Square className="w-4 h-4 text-navy-400" />}
+                      {selectedIds.has(row.id) ? <CheckSquare className="w-4 h-4 text-navy-500 dark:text-navy-200" /> : <Square className="w-4 h-4 text-navy-400 dark:text-navy-200" />}
                     </button>
                   </td>
                   {columns.map((col) => (
@@ -494,7 +494,7 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
                   <td className="py-3 px-4 text-right">
                     <button onClick={() => setModal({ open: true, edit: row })}
                       className="p-1.5 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 transition-colors">
-                      <Edit2 className="w-4 h-4 text-navy-400" />
+                      <Edit2 className="w-4 h-4 text-navy-400 dark:text-navy-200" />
                     </button>
                     <button onClick={() => setDeleteConfirm(row.id)}
                       className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-1">
@@ -504,7 +504,7 @@ export function CrudTable({ title, subtitle, columns, data: initialData, type, f
                 </motion.tr>
               ))}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={columns.length + 2} className="py-12 text-center text-navy-400">{t('common.noResults')}</td></tr>
+                <tr><td colSpan={columns.length + 2} className="py-12 text-center text-navy-400 dark:text-navy-200">{t('common.noResults')}</td></tr>
               )}
             </tbody>
           </table>

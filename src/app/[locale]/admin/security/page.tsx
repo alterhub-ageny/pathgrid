@@ -136,7 +136,7 @@ export default function AdminSecurityPage() {
 
             {secret && (
               <div className="text-center">
-                <p className="text-xs text-navy-400 mb-1">Or enter this key manually:</p>
+                <p className="text-xs text-navy-400 dark:text-navy-200 mb-1">Or enter this key manually:</p>
                 <code className="px-3 py-1.5 rounded-lg bg-navy-100 dark:bg-navy-700 text-navy-700 dark:text-navy-200 text-sm font-mono select-all">{secret}</code>
               </div>
             )}

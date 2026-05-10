@@ -51,7 +51,7 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
               <div className="flex items-center justify-between px-6 py-4 border-b border-navy-100 dark:border-navy-700">
                 <h3 className="text-lg font-semibold text-navy-900 dark:text-white">{title}</h3>
                 <button onClick={onClose} className="p-1 rounded-lg hover:bg-navy-100 dark:hover:bg-navy-700 transition-colors">
-                  <X className="w-5 h-5 text-navy-500" />
+                  <X className="w-5 h-5 text-navy-500 dark:text-navy-200" />
                 </button>
               </div>
             )}

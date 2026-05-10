@@ -167,7 +167,7 @@ export default function AdminMessagesPage() {
           <Card hover={false} className="p-0 overflow-hidden">
             <div className="p-3 border-b border-navy-100 dark:border-navy-700">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-400 dark:text-navy-200" />
                 <input
                   type="text"
                   value={search}
@@ -179,9 +179,9 @@ export default function AdminMessagesPage() {
             </div>
             <div className="divide-y divide-navy-100 dark:divide-navy-700 max-h-[600px] overflow-y-auto">
               {loading ? (
-                <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-navy-400" /></div>
+                <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-navy-400 dark:text-navy-200" /></div>
               ) : filtered.length === 0 ? (
-                <p className="text-center text-sm text-navy-400 py-12">No conversations</p>
+                <p className="text-center text-sm text-navy-400 dark:text-navy-200 py-12">No conversations</p>
               ) : (
                 filtered.map((conv) => (
                   <button
@@ -195,24 +195,24 @@ export default function AdminMessagesPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-navy-200 dark:bg-navy-700 flex items-center justify-center shrink-0">
-                            <User className="w-4 h-4 text-navy-500" />
+                            <User className="w-4 h-4 text-navy-500 dark:text-navy-200" />
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-semibold truncate text-navy-900 dark:text-white">
                               {conv.client?.name || conv.client?.email || 'Unknown'}
                             </p>
                             {conv.subject && (
-                              <p className="text-xs text-navy-400 truncate">{conv.subject}</p>
+                              <p className="text-xs text-navy-400 dark:text-navy-200 truncate">{conv.subject}</p>
                             )}
                           </div>
                         </div>
-                        <p className="text-xs text-navy-400 mt-1">
+                        <p className="text-xs text-navy-400 dark:text-navy-200 mt-1">
                           {conv._count?.messages || 0} unread
                         </p>
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
-                        className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-navy-400 hover:text-red-500 transition-colors shrink-0"
+                        className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-navy-400 dark:text-navy-200 hover:text-red-500 transition-colors shrink-0"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -237,9 +237,9 @@ export default function AdminMessagesPage() {
                         <h3 className="font-semibold text-navy-900 dark:text-white">
                           {conv?.client?.name || conv?.client?.email || 'Client'}
                         </h3>
-                        <p className="text-xs text-navy-400">{conv?.subject}</p>
+                        <p className="text-xs text-navy-400 dark:text-navy-200">{conv?.subject}</p>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-navy-400">
+                      <div className="flex items-center gap-3 text-xs text-navy-400 dark:text-navy-200">
                         {conv?.client?.email && (
                           <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{conv.client.email}</span>
                         )}
@@ -260,7 +260,7 @@ export default function AdminMessagesPage() {
                         : 'bg-navy-100 dark:bg-navy-700 rounded-bl-md'
                     }`}>
                       <p className="text-sm">{msg.content}</p>
-                      <p className={`text-xs mt-1 ${msg.senderId === userId ? 'text-white/70 dark:text-navy-700' : 'text-navy-400'}`}>
+                      <p className={`text-xs mt-1 ${msg.senderId === userId ? 'text-white/70 dark:text-navy-700' : 'text-navy-400 dark:text-navy-200'}`}>
                         {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         {' · '}
                         {msg.sender?.name || (msg.senderId === userId ? 'You' : 'Client')}
@@ -291,7 +291,7 @@ export default function AdminMessagesPage() {
               <div className="text-center">
                 <MessageSquare className="w-16 h-16 text-navy-300 dark:text-navy-600 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-navy-900 dark:text-white mb-2">Select a conversation</h3>
-                <p className="text-sm text-navy-400">Choose a conversation from the left or start a new one</p>
+                <p className="text-sm text-navy-400 dark:text-navy-200">Choose a conversation from the left or start a new one</p>
               </div>
             </Card>
           )}

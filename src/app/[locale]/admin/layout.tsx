@@ -51,7 +51,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-navy-50 dark:bg-navy-950 flex">
+    <div className="min-h-screen bg-navy-50 dark:bg-navy-900 flex">
       <AdminSidebar />
       <div className="flex-1 flex flex-col min-h-screen">
         <AdminHeader />

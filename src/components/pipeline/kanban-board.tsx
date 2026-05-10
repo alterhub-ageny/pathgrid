@@ -254,12 +254,12 @@ export function KanbanBoard({ editId }: { editId?: string }) {
                 <div className="flex items-center gap-2">
                   <div className={cn('w-2 h-2 rounded-full', getStageBg(stage.key))} />
                   <h3 className="text-sm font-semibold text-navy-700 dark:text-navy-200">{t(stage.label)}</h3>
-                  <span className="text-xs text-navy-400 bg-navy-100 dark:bg-navy-700 px-1.5 py-0.5 rounded-full">{stageLeads.length}</span>
+                  <span className="text-xs text-navy-400 dark:text-navy-200 bg-navy-100 dark:bg-navy-700 px-1.5 py-0.5 rounded-full">{stageLeads.length}</span>
                 </div>
               </div>
 
               {totalValue > 0 && (
-                <p className="text-xs text-navy-400 mb-3 px-2">{formatCurrency(totalValue)}</p>
+                <p className="text-xs text-navy-400 dark:text-navy-200 mb-3 px-2">{formatCurrency(totalValue)}</p>
               )}
 
               <div className="space-y-2">
@@ -281,7 +281,7 @@ export function KanbanBoard({ editId }: { editId?: string }) {
                         <GripVertical className="w-3 h-3 text-navy-300 flex-shrink-0 mt-0.5" />
                       </div>
                       {lead.company && (
-                        <p className="text-xs text-navy-400 mb-2">{lead.company}</p>
+                        <p className="text-xs text-navy-400 dark:text-navy-200 mb-2">{lead.company}</p>
                       )}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
@@ -301,7 +301,7 @@ export function KanbanBoard({ editId }: { editId?: string }) {
                         )}
                       </div>
                       {lead.nextFollowUp && (
-                        <div className="flex items-center gap-1 mt-1.5 text-xs text-navy-400">
+                        <div className="flex items-center gap-1 mt-1.5 text-xs text-navy-400 dark:text-navy-200">
                           <Calendar className="w-3 h-3" />
                           {formatDateShort(lead.nextFollowUp)}
                         </div>
@@ -331,37 +331,37 @@ export function KanbanBoard({ editId }: { editId?: string }) {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-navy-400">{t('pipeline.source')}</p>
+                <p className="text-xs text-navy-400 dark:text-navy-200">{t('pipeline.source')}</p>
                 <p className="text-sm font-medium">{detailModal.lead.email || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-xs text-navy-400">{t('pipeline.value')}</p>
+                <p className="text-xs text-navy-400 dark:text-navy-200">{t('pipeline.value')}</p>
                 <p className="text-sm font-medium">{formatCurrency(detailModal.lead.value || 0)}</p>
               </div>
               <div>
-                <p className="text-xs text-navy-400">{t('pipeline.leadScore')}</p>
+                <p className="text-xs text-navy-400 dark:text-navy-200">{t('pipeline.leadScore')}</p>
                 <p className="text-sm font-medium">{detailModal.lead.score || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-xs text-navy-400">Stage</p>
+                <p className="text-xs text-navy-400 dark:text-navy-200">Stage</p>
                 <span className={cn('inline-block text-xs px-2 py-0.5 rounded-full mt-1', getStageColor(detailModal.stage))}>{t(`pipeline.${detailModal.stage}`)}</span>
               </div>
             </div>
             {detailModal.lead.notes && (
               <div>
-                <p className="text-xs text-navy-400 mb-1">Notes</p>
+                <p className="text-xs text-navy-400 dark:text-navy-200 mb-1">Notes</p>
                 <p className="text-sm">{detailModal.lead.notes}</p>
               </div>
             )}
             {detailModal.lead.nextFollowUp && (
               <div>
-                <p className="text-xs text-navy-400 mb-1">Next Follow Up</p>
+                <p className="text-xs text-navy-400 dark:text-navy-200 mb-1">Next Follow Up</p>
                 <p className="text-sm">{formatDateShort(detailModal.lead.nextFollowUp)}</p>
               </div>
             )}
             {detailModal.lead.phone && (
               <div>
-                <p className="text-xs text-navy-400 mb-1">Phone</p>
+                <p className="text-xs text-navy-400 dark:text-navy-200 mb-1">Phone</p>
                 <p className="text-sm">{detailModal.lead.phone}</p>
               </div>
             )}
@@ -453,9 +453,9 @@ function AIScoreInfo({ leadId }: { leadId: string }) {
   return (
     <div className="p-3 rounded-xl bg-navy-50 dark:bg-navy-800/50 border border-navy-100 dark:border-navy-700">
       <div className="flex items-center justify-between mb-1">
-        <p className="text-xs text-navy-400 font-medium">AI Score</p>
+        <p className="text-xs text-navy-400 dark:text-navy-200 font-medium">AI Score</p>
         <button onClick={fetchScore} disabled={loading}
-          className="text-[10px] text-navy-400 hover:text-navy-600 dark:hover:text-navy-200 disabled:opacity-50">
+          className="text-[10px] text-navy-400 dark:text-navy-200 hover:text-navy-600 dark:hover:text-navy-200 disabled:opacity-50">
           {loading ? '...' : 'Recalculate'}
         </button>
       </div>
@@ -471,7 +471,7 @@ function AIScoreInfo({ leadId }: { leadId: string }) {
           <p className="text-xs text-navy-500 dark:text-navy-400">{data.recommendation}</p>
         </>
       ) : (
-        <p className="text-xs text-navy-400">Calculating...</p>
+        <p className="text-xs text-navy-400 dark:text-navy-200">Calculating...</p>
       )}
     </div>
   );

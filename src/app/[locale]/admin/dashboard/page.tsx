@@ -121,7 +121,7 @@ export default function AdminDashboardPage() {
       {statSection?.visible && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {loading ? (
-            <div className="col-span-full py-12 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-navy-400" /></div>
+            <div className="col-span-full py-12 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-navy-400 dark:text-navy-200" /></div>
           ) : stats?.map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -134,12 +134,12 @@ export default function AdminDashboardPage() {
                   <div className="w-10 h-10 rounded-xl bg-navy-100 dark:bg-navy-700 flex items-center justify-center">
                     <stat.icon className="w-5 h-5 text-navy-700 dark:text-gold-500" />
                   </div>
-                  <span className="text-xs font-medium text-navy-400">{stat.change}</span>
+                  <span className="text-xs font-medium text-navy-400 dark:text-navy-200">{stat.change}</span>
                 </div>
                 <p className="text-2xl font-bold font-serif text-navy-900 dark:text-white">
                   {stat.label === 'Revenue' ? formatCurrency(stat.value) : stat.value}
                 </p>
-                <p className="text-xs text-navy-400 mt-1">{stat.label}</p>
+                <p className="text-xs text-navy-400 dark:text-navy-200 mt-1">{stat.label}</p>
               </Card>
             </motion.div>
           ))}

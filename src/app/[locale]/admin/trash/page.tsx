@@ -110,7 +110,7 @@ export default function AdminTrashPage() {
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-400 dark:text-navy-200" />
           <input
             type="text"
             value={search}
@@ -132,16 +132,16 @@ export default function AdminTrashPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-navy-400" /></div>
+        <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-navy-400 dark:text-navy-200" /></div>
       ) : filtered.length === 0 ? (
         <Card hover={false} className="flex flex-col items-center justify-center py-16">
           <Trash2 className="w-16 h-16 text-navy-300 dark:text-navy-600 mb-4" />
           <h3 className="text-lg font-semibold text-navy-900 dark:text-white mb-2">Trash is empty</h3>
-          <p className="text-sm text-navy-400">Deleted items will appear here</p>
+          <p className="text-sm text-navy-400 dark:text-navy-200">Deleted items will appear here</p>
         </Card>
       ) : (
         <div className="space-y-3">
-          <p className="text-sm text-navy-400">{filtered.length} item(s) in trash</p>
+          <p className="text-sm text-navy-400 dark:text-navy-200">{filtered.length} item(s) in trash</p>
           {filtered.map((item, i) => (
             <motion.div
               key={`${item.type}-${item.id}`}
@@ -155,7 +155,7 @@ export default function AdminTrashPage() {
                     <Badge className={typeColors[item.type] || ''}>{item.label}</Badge>
                     <span className="text-sm font-semibold text-navy-900 dark:text-white truncate">{item.title}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-navy-400">
+                  <div className="flex items-center gap-3 text-xs text-navy-400 dark:text-navy-200">
                     <span>Deleted {item.daysAgo}d ago</span>
                     {item.expiresIn > 0 ? (
                       <span className="text-amber-500">Expires in {item.expiresIn}d</span>

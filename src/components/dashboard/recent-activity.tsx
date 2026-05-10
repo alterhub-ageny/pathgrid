@@ -43,20 +43,20 @@ export function RecentActivity() {
     <Card>
       <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
       {loading ? (
-        <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-navy-400" /></div>
+        <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-navy-400 dark:text-navy-200" /></div>
       ) : activities.length === 0 ? (
-        <p className="text-sm text-navy-400 text-center py-8">No recent activity</p>
+        <p className="text-sm text-navy-400 dark:text-navy-200 text-center py-8">No recent activity</p>
       ) : (
         <div className="space-y-2 max-h-80 overflow-y-auto">
           {activities.map((a, i) => (
             <motion.div key={a.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.02 }}
               className="flex items-start gap-3 px-3 py-2 rounded-lg hover:bg-navy-50 dark:hover:bg-navy-800/50 transition-colors">
-              <span className={`p-1 rounded-full mt-0.5 ${typeIcons[a.type] || 'text-navy-400'} bg-navy-100 dark:bg-navy-700`}>
+              <span className={`p-1 rounded-full mt-0.5 ${typeIcons[a.type] || 'text-navy-400 dark:text-navy-200'} bg-navy-100 dark:bg-navy-700`}>
                 <Clock className="w-3 h-3" />
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-navy-900 dark:text-white truncate">{a.description}</p>
-                <div className="flex items-center gap-2 text-xs text-navy-400 mt-0.5">
+                <div className="flex items-center gap-2 text-xs text-navy-400 dark:text-navy-200 mt-0.5">
                   <span className="flex items-center gap-1"><User className="w-3 h-3" />{a.user?.name || 'System'}</span>
                   <span>{formatTime(a.createdAt)}</span>
                 </div>

@@ -103,11 +103,11 @@ export default function AdminMediaPage() {
       </div>
 
       {loading ? (
-        <div className="py-20 text-center text-navy-400">
-          <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+        <div className="py-20 text-center text-navy-400 dark:text-navy-200">
+          <Loader2 className="w-5 h-5 animate-spin mx-auto dark:text-navy-200" />
         </div>
       ) : items.length === 0 ? (
-        <div className="py-20 text-center text-navy-400">{t('common.noResults')}</div>
+        <div className="py-20 text-center text-navy-400 dark:text-navy-200">{t('common.noResults')}</div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {items.map((item, i) => (
@@ -127,12 +127,12 @@ export default function AdminMediaPage() {
               </div>
               <div className="p-2.5">
                 <p className="text-xs font-medium text-navy-700 dark:text-navy-200 truncate" title={item.name}>{item.name}</p>
-                <p className="text-xs text-navy-400 mt-0.5">{formatSize(item.size)}</p>
+                <p className="text-xs text-navy-400 dark:text-navy-200 mt-0.5">{formatSize(item.size)}</p>
               </div>
               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={() => handleCopyUrl(item.url)}
                   className="p-1.5 rounded-lg bg-white/90 dark:bg-navy-900/90 hover:bg-white dark:hover:bg-navy-900 shadow-sm transition-colors">
-                  {copied === item.url ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-navy-500" />}
+                  {copied === item.url ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-navy-500 dark:text-navy-200" />}
                 </button>
                 <button onClick={() => handleDelete(item.name)}
                   className="p-1.5 rounded-lg bg-white/90 dark:bg-navy-900/90 hover:bg-white dark:hover:bg-navy-900 shadow-sm transition-colors">

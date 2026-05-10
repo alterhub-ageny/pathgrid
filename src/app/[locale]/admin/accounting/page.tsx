@@ -128,7 +128,7 @@ export default function AccountingPage() {
     return null;
   };
 
-  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-navy-400" /></div>;
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-navy-400 dark:text-navy-200" /></div>;
 
   return (
     <div className="space-y-8">
@@ -160,7 +160,7 @@ export default function AccountingPage() {
                 <stat.icon className={`w-5 h-5 ${stat.color}`} />
               </div>
               <p className="text-2xl font-bold font-serif text-navy-900 dark:text-white">{typeof stat.value === 'number' ? formatCurrency(stat.value) : stat.value}</p>
-              <p className="text-sm text-navy-400 mt-1">{stat.label}</p>
+              <p className="text-sm text-navy-400 dark:text-navy-200 mt-1">{stat.label}</p>
             </Card>
           </motion.div>
         ))}
@@ -196,7 +196,7 @@ export default function AccountingPage() {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = 'invoices.csv'; a.click();
             URL.revokeObjectURL(url);
-          }} className="flex items-center gap-1 text-sm text-navy-400 hover:text-navy-600 dark:hover:text-navy-200 transition-colors">
+          }} className="flex items-center gap-1 text-sm text-navy-400 dark:text-navy-200 hover:text-navy-600 dark:hover:text-navy-200 transition-colors">
             <Download className="w-4 h-4" /> {t('admin.exportCsv')}
           </button>
         </div>
@@ -204,10 +204,10 @@ export default function AccountingPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-navy-100 dark:border-navy-700">
-                <th className="text-left py-3 font-medium text-navy-400">Invoice</th>
-                <th className="text-right py-3 font-medium text-navy-400">Amount</th>
-                <th className="text-center py-3 font-medium text-navy-400">Status</th>
-                <th className="text-right py-3 font-medium text-navy-400">Date</th>
+                <th className="text-left py-3 font-medium text-navy-400 dark:text-navy-200">Invoice</th>
+                <th className="text-right py-3 font-medium text-navy-400 dark:text-navy-200">Amount</th>
+                <th className="text-center py-3 font-medium text-navy-400 dark:text-navy-200">Status</th>
+                <th className="text-right py-3 font-medium text-navy-400 dark:text-navy-200">Date</th>
               </tr>
             </thead>
             <tbody>
@@ -220,7 +220,7 @@ export default function AccountingPage() {
                       {inv.status}
                     </Badge>
                   </td>
-                  <td className="py-3 text-right text-navy-400">{formatDate(inv.createdAt)}</td>
+                  <td className="py-3 text-right text-navy-400 dark:text-navy-200">{formatDate(inv.createdAt)}</td>
                 </tr>
               ))}
             </tbody>

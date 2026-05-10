@@ -75,7 +75,7 @@ export default function AdminSettingsPage() {
   };
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-navy-400" /></div>;
+    return <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-navy-400 dark:text-navy-200" /></div>;
   }
 
   return (

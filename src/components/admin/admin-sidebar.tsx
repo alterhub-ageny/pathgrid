@@ -5,34 +5,72 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Briefcase, Image, FileText, Users, MessageSquare,
-  DollarSign, TrendingUp, Calendar, UserCog, Settings, X, ChevronLeft,
+  DollarSign, TrendingUp, Calendar, UserCog, Settings, X, ChevronLeft, ChevronDown,
   Target, BarChart3, StickyNote, FolderKanban, Shield, Trash2, Mail
 } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
 import { useTranslation } from '@/hooks/use-translation';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
-const navItems = [
-  { label: 'admin.dashboard', href: '/admin/dashboard', icon: LayoutDashboard, roles: ['admin', 'staff'] },
-  { label: 'admin.services', href: '/admin/services', icon: Briefcase, roles: ['admin', 'staff'] },
-  { label: 'admin.portfolio', href: '/admin/portfolio', icon: Image, roles: ['admin', 'staff'] },
-  { label: 'admin.blog', href: '/admin/blog', icon: FileText, roles: ['admin', 'staff'] },
-  { label: 'admin.team', href: '/admin/team', icon: Users, roles: ['admin', 'staff'] },
-  { label: 'admin.testimonials', href: '/admin/testimonials', icon: MessageSquare, roles: ['admin', 'staff'] },
-  { label: 'admin.messages', href: '/admin/messages', icon: Mail, roles: ['admin', 'staff'] },
-  { label: 'admin.clients', href: '/admin/clients', icon: Users, roles: ['admin'] },
-  { label: 'admin.pipeline', href: '/admin/pipeline', icon: Target, roles: ['admin', 'staff'] },
-  { label: 'admin.accounting', href: '/admin/accounting', icon: BarChart3, roles: ['admin'] },
-  { label: 'admin.invoices', href: '/admin/invoices', icon: DollarSign, roles: ['admin', 'staff'] },
-  { label: 'admin.projects', href: '/admin/projects', icon: FolderKanban, roles: ['admin', 'staff'] },
-  { label: 'admin.calendar', href: '/admin/calendar', icon: Calendar, roles: ['admin', 'staff'] },
-  { label: 'admin.media', href: '/admin/media', icon: Image, roles: ['admin', 'staff'] },
-  { label: 'admin.staff', href: '/admin/staff', icon: UserCog, roles: ['admin'] },
-  { label: 'admin.notes', href: '/admin/notes', icon: StickyNote, roles: ['admin', 'staff'] },
-  { label: 'admin.security', href: '/admin/security', icon: Shield, roles: ['admin'] },
-  { label: 'admin.settings', href: '/admin/settings', icon: Settings, roles: ['admin'] },
-  { label: 'admin.trash', href: '/admin/trash', icon: Trash2, roles: ['admin', 'staff'] },
+interface NavItem {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+  roles: string[];
+}
+
+interface Category {
+  label: string;
+  items: NavItem[];
+}
+
+const navCategories: Category[] = [
+  {
+    label: 'Main',
+    items: [
+      { label: 'admin.dashboard', href: '/admin/dashboard', icon: LayoutDashboard, roles: ['admin', 'staff'] },
+    ],
+  },
+  {
+    label: 'Content',
+    items: [
+      { label: 'admin.services', href: '/admin/services', icon: Briefcase, roles: ['admin', 'staff'] },
+      { label: 'admin.portfolio', href: '/admin/portfolio', icon: Image, roles: ['admin', 'staff'] },
+      { label: 'admin.blog', href: '/admin/blog', icon: FileText, roles: ['admin', 'staff'] },
+      { label: 'admin.team', href: '/admin/team', icon: Users, roles: ['admin', 'staff'] },
+      { label: 'admin.testimonials', href: '/admin/testimonials', icon: MessageSquare, roles: ['admin', 'staff'] },
+      { label: 'admin.media', href: '/admin/media', icon: Image, roles: ['admin', 'staff'] },
+      { label: 'admin.notes', href: '/admin/notes', icon: StickyNote, roles: ['admin', 'staff'] },
+    ],
+  },
+  {
+    label: 'Management',
+    items: [
+      { label: 'admin.messages', href: '/admin/messages', icon: Mail, roles: ['admin', 'staff'] },
+      { label: 'admin.clients', href: '/admin/clients', icon: Users, roles: ['admin'] },
+      { label: 'admin.pipeline', href: '/admin/pipeline', icon: Target, roles: ['admin', 'staff'] },
+      { label: 'admin.invoices', href: '/admin/invoices', icon: DollarSign, roles: ['admin', 'staff'] },
+      { label: 'admin.projects', href: '/admin/projects', icon: FolderKanban, roles: ['admin', 'staff'] },
+      { label: 'admin.calendar', href: '/admin/calendar', icon: Calendar, roles: ['admin', 'staff'] },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { label: 'admin.accounting', href: '/admin/accounting', icon: BarChart3, roles: ['admin'] },
+    ],
+  },
+  {
+    label: 'Administration',
+    items: [
+      { label: 'admin.staff', href: '/admin/staff', icon: UserCog, roles: ['admin'] },
+      { label: 'admin.security', href: '/admin/security', icon: Shield, roles: ['admin'] },
+      { label: 'admin.settings', href: '/admin/settings', icon: Settings, roles: ['admin'] },
+      { label: 'admin.trash', href: '/admin/trash', icon: Trash2, roles: ['admin', 'staff'] },
+    ],
+  },
 ];
 
 export function AdminSidebar() {
@@ -43,7 +81,22 @@ export function AdminSidebar() {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || 'staff';
 
-  const visibleItems = navItems.filter((item) => item.roles.includes(userRole));
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return JSON.parse(localStorage.getItem('sidebar_categories') || '{}');
+      } catch { /* ignore */ }
+    }
+    return {};
+  });
+
+  const toggleCategory = (key: string) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem('sidebar_categories', JSON.stringify(next));
+      return next;
+    });
+  };
 
   const localePath = `/${locale}`;
 
@@ -81,23 +134,53 @@ export function AdminSidebar() {
         </div>
 
         <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-4rem)]">
-          {visibleItems.map((item) => {
-            const isActive = pathname.includes(item.href);
+          {navCategories.map((category) => {
+            const visibleItems = category.items.filter((item) => item.roles.includes(userRole));
+            if (visibleItems.length === 0) return null;
+
+            const isCollapsed = collapsed[category.label];
+
             return (
-              <Link
-                key={item.href}
-                href={`/${locale}${item.href}`}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-                  isActive
-                    ? 'bg-navy-100 dark:bg-navy-800 text-navy-900 dark:text-white'
-                    : 'text-navy-500 dark:text-navy-400 hover:bg-navy-50 dark:hover:bg-navy-800/50 hover:text-navy-900 dark:hover:text-white'
-                )}
-              >
-                <item.icon className="w-4 h-4 flex-shrink-0" />
-                {t(item.label)}
-              </Link>
+              <div key={category.label} className="mb-2">
+                <button
+                  onClick={() => toggleCategory(category.label)}
+                  className="flex items-center justify-between w-full px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-navy-400 dark:text-navy-300 hover:text-navy-600 dark:hover:text-white hover:bg-navy-50 dark:hover:bg-navy-800/50 transition-colors"
+                >
+                  <span>{category.label}</span>
+                  <ChevronDown className={cn('w-3.5 h-3.5 transition-transform duration-200', isCollapsed ? '-rotate-90' : '')} />
+                </button>
+                <AnimatePresence initial={false}>
+                  {!isCollapsed && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      {visibleItems.map((item) => {
+                        const isActive = pathname.includes(item.href);
+                        return (
+                          <Link
+                            key={item.href}
+                            href={`/${locale}${item.href}`}
+                            onClick={() => setSidebarOpen(false)}
+                            className={cn(
+                              'flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+                              isActive
+                                ? 'bg-navy-100 dark:bg-navy-800 text-navy-900 dark:text-white'
+                                : 'text-navy-500 dark:text-navy-400 hover:bg-navy-50 dark:hover:bg-navy-800/50 hover:text-navy-900 dark:hover:text-white'
+                            )}
+                          >
+                            <item.icon className="w-4 h-4 flex-shrink-0" />
+                            {t(item.label)}
+                          </Link>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             );
           })}
         </nav>
