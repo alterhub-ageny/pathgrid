@@ -61,7 +61,14 @@ export function ChatBot() {
     if (!sessionId || historyLoaded || messages.length > 0) return;
     (async () => {
       try {
-        const res = await fetch(`/api/chat?sessionId=${sessionId}`);
+        const savedHandoff = localStorage.getItem(STORAGE_KEY_HANDOFF);
+        let email = '';
+        if (savedHandoff) {
+          try { email = JSON.parse(savedHandoff).email || ''; } catch { /* ignore */ }
+        }
+        const params = new URLSearchParams({ sessionId });
+        if (email) params.set('email', email);
+        const res = await fetch(`/api/chat?${params}`);
         const history = await res.json();
         if (Array.isArray(history) && history.length > 0) {
           setChatMessages(history.map((m: any) => ({ role: m.role, content: m.content })));

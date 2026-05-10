@@ -65,9 +65,39 @@ async function saveChatMessages(sessionId: string, messages: { role: string; con
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const sessionId = searchParams.get('sessionId');
-  if (!sessionId) return NextResponse.json([]);
-  const messages = await getChatHistory(sessionId);
-  return NextResponse.json(messages);
+  const email = searchParams.get('email');
+
+  const chatMessages = sessionId ? await getChatHistory(sessionId) : [];
+
+  let conversationMessages: any[] = [];
+  if (email) {
+    try {
+      const user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+      if (user) {
+        const msgs = await prisma.message.findMany({
+          where: {
+            conversation: { clientId: user.id, deletedAt: null },
+            deletedAt: null,
+          },
+          orderBy: { createdAt: 'asc' },
+          include: { sender: { select: { id: true, role: true } } },
+          take: 50,
+        });
+        conversationMessages = msgs.map((m) => ({
+          role: m.sender.role === 'admin' || m.sender.role === 'staff' ? 'assistant' : 'user',
+          content: m.content,
+          createdAt: m.createdAt,
+          fromConversation: true,
+        }));
+      }
+    } catch { /* silent */ }
+  }
+
+  const merged = [...chatMessages, ...conversationMessages].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+
+  return NextResponse.json(merged);
 }
 
 export async function POST(request: Request) {
@@ -80,23 +110,20 @@ export async function POST(request: Request) {
 
     // Handle human handoff
     if (action === 'handoff') {
-      const userId = (authSession?.user as any)?.id;
-
-      let clientId = userId;
-
-      // For unauthenticated visitors, find or create a user
-      if (!clientId && email) {
-        let client = await prisma.user.findUnique({ where: { email } }).catch(() => null);
-        if (!client) {
-          client = await prisma.user.create({
-            data: { name: name || email, email, role: 'client' },
-          }).catch(() => null);
-        }
-        clientId = client?.id;
+      if (!email) {
+        return NextResponse.json({ error: 'Email is required for handoff' }, { status: 400 });
       }
 
+      let client = await prisma.user.findUnique({ where: { email } }).catch(() => null);
+      if (!client) {
+        client = await prisma.user.create({
+          data: { name: name || email, email, role: 'client' },
+        }).catch(() => null);
+      }
+
+      const clientId = client?.id;
       if (!clientId) {
-        return NextResponse.json({ error: 'Could not identify user' }, { status: 400 });
+        return NextResponse.json({ error: 'Could not identify or create user' }, { status: 400 });
       }
 
       try {
