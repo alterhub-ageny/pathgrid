@@ -131,6 +131,28 @@ export function ChatBot() {
     setLoading(true);
 
     try {
+      // If handoff is active, send message to the conversation
+      if (handoffData?.conversationId) {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'reply-conversation',
+            message: text,
+            conversationId: handoffData.conversationId,
+            name: handoffData.name,
+            locale,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          toast.error(json.error || 'Failed to send');
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Normal AI chat
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -150,7 +172,7 @@ export function ChatBot() {
     } finally {
       setLoading(false);
     }
-  }, [input, loading, sessionId, locale, addChatMessage, setChatSessionId]);
+  }, [input, loading, sessionId, locale, handoffData?.conversationId, addChatMessage, setChatSessionId]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -359,22 +381,30 @@ export function ChatBot() {
                       <div className="text-center py-8">
                         <MessageSquare className="w-10 h-10 text-navy-300 dark:text-navy-600 mx-auto mb-3" />
                         <p className="text-sm text-navy-400 dark:text-navy-500">
-                          {handoffData ? 'Waiting for a team member to respond. Your messages are saved.' : 'Ask me anything about Pathgrid Agency!'}
+                          {handoffData ? 'Waiting for a team member to respond.' : 'Ask me anything about Pathgrid Agency!'}
                         </p>
                       </div>
                     )}
                     {messages.map((msg, i) => {
                       const isUser = msg.role === 'user';
-                      return (
-                        <motion.div
-                          key={i}
+                      const isConversation = !!(msg as any).fromConversation;
+                      const prevIsConversation = i > 0 ? !!((messages as any)[i - 1] as any)?.fromConversation : false;
+                      const showSep = isConversation && !prevIsConversation && i > 0;
+                      return (<div key={i}>
+                      {showSep && (
+                        <div className="flex items-center gap-2 my-4">
+                          <div className="flex-1 h-px bg-gold-300 dark:bg-gold-600/50" />
+                          <span className="text-[10px] text-gold-600 dark:text-gold-400 font-medium shrink-0">Live conversation started</span>
+                          <div className="flex-1 h-px bg-gold-300 dark:bg-gold-600/50" />
+                        </div>
+                      )}
+                      <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.2 }}
                           className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}
                         >
                           <div className={`flex items-start gap-2 max-w-[85%] ${isUser ? 'flex-row-reverse' : ''}`}>
-                            {/* Avatar - different for user vs assistant */}
                             <div className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center shadow-sm ${
                               isUser
                                 ? 'bg-navy-200 dark:bg-navy-700'
@@ -385,7 +415,6 @@ export function ChatBot() {
                                 : <Bot className="w-3.5 h-3.5 text-white" />
                               }
                             </div>
-                            {/* Bubble */}
                             <div className={`p-3 text-sm leading-relaxed ${
                               isUser
                                 ? 'bg-gradient-to-br from-navy-700 to-navy-800 dark:from-gold-500 dark:to-amber-500 text-white dark:text-navy-900 rounded-2xl rounded-br-md shadow-md'
@@ -395,7 +424,8 @@ export function ChatBot() {
                             </div>
                           </div>
                         </motion.div>
-                      );
+                      </div>
+                    );
                     })}
                     {loading && (
                       <div className="flex justify-start mb-3">

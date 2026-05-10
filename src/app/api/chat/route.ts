@@ -182,6 +182,44 @@ export async function POST(request: Request) {
       }
     }
 
+    // Handle reply to an existing conversation (visitor after handoff)
+    if (action === 'reply-conversation') {
+      const { conversationId, name } = await request.json().catch(() => ({})) as any;
+      if (!conversationId) return NextResponse.json({ error: 'Conversation ID required' }, { status: 400 });
+
+      try {
+        const conv = await prisma.conversation.findUnique({ where: { id: conversationId }, select: { clientId: true } });
+        if (!conv) return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+
+        const msg = await prisma.message.create({
+          data: { content: message, senderId: conv.clientId, conversationId },
+        });
+
+        await prisma.conversation.update({
+          where: { id: conversationId },
+          data: { lastMessageAt: new Date() },
+        });
+
+        // Notify admins
+        const admins = await prisma.user.findMany({ where: { role: { in: ['admin', 'staff'] } } });
+        for (const admin of admins) {
+          await prisma.notification.create({
+            data: {
+              userId: admin.id,
+              type: 'info',
+              title: 'New reply: ' + (name || conv.clientId),
+              message: message.substring(0, 100),
+              link: `/${admin.locale || 'en'}/admin/messages`,
+            },
+          }).catch(() => {});
+        }
+
+        return NextResponse.json({ success: true, conversationId });
+      } catch (err: any) {
+        return NextResponse.json({ error: err.message || 'Failed to reply' }, { status: 500 });
+      }
+    }
+
     // Dashboard summary special case
     if (chatSessionId === 'dashboard-summary') {
       if (!AI_API_KEY) return NextResponse.json({ reply: SUMMARY_FALLBACK, sessionId: chatSessionId });
