@@ -34,8 +34,20 @@ export default function LoginPage() {
       return;
     }
 
-    // Full page reload ensures fresh session cookie
-    window.location.href = `/${locale}/`;
+    // Fetch session to get role before redirect
+    try {
+      const sessionRes = await fetch('/api/auth/session');
+      const session = await sessionRes.json();
+      const role = session?.user?.role;
+
+      if (role === 'client') {
+        window.location.href = `/${locale}/client-portal`;
+      } else {
+        window.location.href = `/${locale}/admin/dashboard`;
+      }
+    } catch {
+      window.location.href = `/${locale}/admin/dashboard`;
+    }
   };
 
   return (
